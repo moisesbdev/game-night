@@ -3,6 +3,7 @@ import { S, api, chip, gameByTitle, h, icon, mascot, nm, pids, players, poster, 
 import { LEN_HELP, LEN_NAME, MOODS, QUICK_PICKS, ago, cleanFilters, daysSince, describeFilters, fmtMinutes, fmtSeconds, greeting, nightKey, paceLine, playersLabel, quickLabel, quickOrder, resolveFilters, watchFirst } from "./logic.js";
 import { buildTurn, go, render } from "./main.js";
 import { celebrateSpooky } from "./spooky.js";
+import { foundSummary } from "./library.js";
 import { presetRow } from "./presets.js";
 import { drawWheel, resizeWheel } from "./wheel.js";
 import { gameSheet } from "./games.js";
@@ -98,7 +99,23 @@ function soFarLine(nt) {
   return h("p", { class: "small sofar" }, "Tonight so far: " + played.map(g => g.title + " (" + how(g) + ")").join(" · ") + " ", h("button", { class: "link", type: "button", onclick: () => go("journal", "nights") }, "Open the journal"));
 }
 
+/** The empty shelf's welcome: what the library detectors found on this computer, one tap to bring it in, or the sample games. */
+function welcomeView() {
+  const found = h("p", { class: "lede count", role: "status" }, "Looking for your games on this computer...");
+  const card = h("div", { class: "hero welcome" }, mascot("hero-mascot"), h("p", { class: "kicker" }, greeting()), h("h1", {}, "Let's find your games"), found,
+    h("div", { class: "row", style: "justify-content:center" },
+      h("button", { class: "btn primary big", type: "button", onclick: () => go("shelf", "library") }, "Choose what to bring in"),
+      h("button", { class: "btn", type: "button", onclick: async () => { const r = await api("/api/sample", {}); await reload(); toast("Added " + r.added + " sample games."); renderHome(); } }, "Start with 20 well-known games")),
+    h("p", { class: "small" }, "Then set your names in More > Settings: a couple, a few friends, up to eight."));
+  api("/api/library").then(d => {
+    const sum = foundSummary(d.sources);
+    found.textContent = sum ? "Found: " + sum + "." : "Nothing found on this computer's launchers yet. Add a game folder in Settings, or add games by hand on the Shelf.";
+  }).catch(() => { found.textContent = ""; });
+  return card;
+}
+
 function heroView(mode) {
+  if (!S.boot.games.length) return welcomeView();
   const b = S.boot, narrowed = describeFilters(S.filters);
   const tiles = quickOrder(QUICK_PICKS, document.body.dataset.season).map((q, i) => h("button", { class: "qtile", type: "button", "data-id": q.id, style: "--i:" + i, disabled: S.spinning, onclick: () => spin(resolveFilters(q.f, pids().length)) }, h("span", { class: "qicon" }, icon(q.icon)), h("span", {}, quickLabel(q, pids().length))));
   return h("div", { class: "hero" + (mode ? " " + mode : "") },

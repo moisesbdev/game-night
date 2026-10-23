@@ -4,6 +4,7 @@
 mod app;
 mod catalog;
 mod config;
+mod detect;
 mod folders;
 mod health;
 mod journal;

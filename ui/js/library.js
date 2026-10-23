@@ -52,45 +52,68 @@ export function wishDialog() {
   dlg.showModal(); t.focus();
 }
 
-/** What's installed (Steam) or in your game folders, and not on the shelf yet. Pick some and they're added as drafts to check. */
+/** "Steam 27 · ES-DE 62 · GOG 8" for the sources that found something not yet on the shelf. */
+export function foundSummary(sources) {
+  return sources.map(s => [s.label, s.games.filter(g => !g.inCatalog).length]).filter(([, n]) => n).map(([l, n]) => l + " " + n).join(" · ");
+}
+
+/** Everything the library detectors found, one section per source (grouped by platform where a source holds several). Pick some and
+ *  they're added as drafts with what the source could tell; "Add and look them up" also asks the lookup sources. */
 export async function librarySection() {
   const d = await api("/api/library");
   const picked = new Set();
   const status = h("p", { class: "small", role: "status", "aria-live": "polite" });
-  const listOf = (items, title, empty) => {
-    const fresh = items.filter(x => !x.inCatalog), have = items.length - fresh.length;
-    const box = h("div", { class: "panel" }, h("b", {}, title + " (" + fresh.length + " not on the shelf" + (have ? ", " + have + " already are" : "") + ")"));
-    if (!items.length) { box.append(h("p", { class: "small" }, empty)); return box; }
+  const count = () => { status.textContent = picked.size ? picked.size + " selected" : ""; };
+  const tick = (box, on) => box.querySelectorAll("input[type=checkbox]").forEach(c => { if (c.checked !== on) { c.checked = on; c.dispatchEvent(new Event("change")); } });
+  const allChip = (box, label) => { const c = chip(label || "Select all", false, () => { const on = c.getAttribute("aria-pressed") !== "true"; c.setAttribute("aria-pressed", String(on)); tick(box, on); }); return c; };
+  const item = x => h("li", {}, h("label", {},
+    h("input", { type: "checkbox", onchange: e => { const k = x.source + "|" + x.key; if (e.target.checked) picked.add(k); else picked.delete(k); count(); } }),
+    " " + x.title, x.canStart ? null : h("span", { class: "small" }, "  start it yourself")));
+  const section = src => {
+    const fresh = src.games.filter(x => !x.inCatalog), have = src.games.length - fresh.length;
+    const head = h("summary", {}, h("b", {}, src.label), h("span", { class: "small" }, "  " + fresh.length + " new" + (have ? " · " + have + " already on the shelf" : "")));
+    const box = h("details", { class: "panel libsource", open: fresh.length > 0 && fresh.length <= 60 }, head,
+      h("p", { class: "small" }, "Found at " + src.foundAt.join(" · ") + "." + (src.note ? " " + src.note : "")));
     if (!fresh.length) { box.append(h("p", { class: "small" }, "Everything here is already on the shelf.")); return box; }
-    const all = chip("Select all", false, () => { const on = all.getAttribute("aria-pressed") !== "true"; all.setAttribute("aria-pressed", String(on)); box.querySelectorAll("input[type=checkbox]").forEach(c => { c.checked = on; c.dispatchEvent(new Event("change")); }); });
-    box.append(h("div", { class: "row" }, all), h("ul", { class: "libpick" }, fresh.map(x => h("li", {}, h("label", {},
-      h("input", { type: "checkbox", onchange: e => { const k = x.source + "|" + x.key; if (e.target.checked) picked.add(k); else picked.delete(k); status.textContent = picked.size ? picked.size + " selected" : ""; } }),
-      " " + x.title, x.source === "folder" ? h("span", { class: "small" }, "  " + x.key) : null)))));
+    const platforms = [...new Set(fresh.map(x => x.sys))];
+    if (platforms.length > 1) {
+      box.append(h("div", { class: "row" }, allChip(box, "Select all " + fresh.length)));
+      for (const p of platforms) {
+        const games = fresh.filter(x => x.sys === p), group = h("div", { class: "libgroup" });
+        group.append(h("div", { class: "row" }, h("b", { class: "small" }, p + " (" + games.length + ")"), allChip(group, "Select these")), h("ul", { class: "libpick" }, games.map(item)));
+        box.append(group);
+      }
+    } else box.append(h("div", { class: "row" }, allChip(box)), h("ul", { class: "libpick" }, fresh.map(item)));
     return box;
   };
   const add = async (lookup) => {
     if (!picked.size) { status.textContent = "Pick some games first."; return; }
     const picks = [...picked].map(k => { const [source, ...rest] = k.split("|"); return { source, key: rest.join("|") }; });
+    const before = new Set(S.boot.games.map(g => g.t));
     try {
       const r = await api("/api/library/import", { picks });
       status.textContent = "Added " + r.added + " to the shelf." + (r.refused.length ? " Not added: " + r.refused.join("; ") : "");
       await reload();
+      const added = S.boot.games.filter(g => !before.has(g.t));
       if (lookup && S.boot.scrape) {
-        const drafts = S.boot.games.filter(g => g.draft), sources = await lookupSources();
+        const sources = await lookupSources(), need = added.filter(g => !g.cover || /haven't been checked/.test(g.why));
         let n = 0;
-        for (const g of drafts) { status.textContent = "Looking up " + (++n) + " of " + drafts.length + ": " + g.t; await lookUpAll(g.t, sources); }      // a game no source knows stays a draft to fill in by hand
+        for (const g of need) { status.textContent = "Looking up " + (++n) + " of " + need.length + ": " + g.t; await lookUpAll(g.t, sources); }      // a game no source knows stays a draft to fill in by hand
         await reload();
-        status.textContent = "Added " + r.added + " and looked up " + drafts.length + ". Games marked \"to check\" still need a look.";
+        status.textContent = "Added " + r.added + (need.length ? " and looked up " + need.length : "") + ". Games marked \"to check\" still need a look at how they're played together.";
       }
-      toast(status.textContent);
+      toast(status.textContent); render();
     } catch (e) { status.textContent = e.message; }
   };
+  const found = d.sources.filter(s => s.foundAt.length), missing = d.sources.filter(s => !s.foundAt.length && s.id !== "folder");
+  const summary = foundSummary(d.sources);
   return h("div", {},
-    h("p", { class: "lede" }, "Bring in what you already have. New games arrive as drafts: they can be drawn straight away, and are marked \"to check\" until someone looks over how they're played together."),
-    listOf(d.steam, "Steam", d.steamDir ? "No installed Steam games found." : "Steam wasn't found on this computer. If it's installed somewhere unusual, set its folder in Settings."),
-    listOf(d.folders, "Game folders", d.gameDirs.length ? "Nothing that starts a game was found in your game folders." : "No game folders yet. Add the folders where your games or their shortcuts live in Settings."),
+    h("p", { class: "lede" }, summary ? "Found on this computer: " + summary + "." : "Nothing new found on this computer's launchers and folders."),
+    h("p", { class: "small" }, "New games arrive as drafts: they're drawn straight away, and marked \"to check\" until someone looks over how they're played together. Games from ES-DE keep their descriptions and box art."),
+    found.map(section),
     h("div", { class: "row" }, S.boot.scrape ? h("button", { class: "btn primary", type: "button", onclick: () => add(true) }, "Add and look them up") : null,
-      h("button", { class: "btn" + (S.boot.scrape ? "" : " primary"), type: "button", onclick: () => add(false) }, "Add"), h("button", { class: "link", type: "button", onclick: () => go("more", "settings") }, "Folders and Steam settings")),
+      h("button", { class: "btn" + (S.boot.scrape ? "" : " primary"), type: "button", onclick: () => add(false) }, "Add"), h("button", { class: "link", type: "button", onclick: () => go("more", "settings") }, "Game folders and Steam settings")),
     status,
+    missing.length ? h("p", { class: "small" }, "Not on this computer: " + missing.map(s => s.label).join(", ") + ". Games anywhere else can come in through a game folder (Settings) or Add a game.") : null,
     S.boot.scrape ? h("p", { class: "small" }, "Looking up uses the Steam store's public pages (no account), plus TheGamesDB, ScreenScraper and SteamGridDB when you've added their keys in Settings, and only when you press it.") : null);
 }

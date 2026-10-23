@@ -22,6 +22,7 @@ pub type R = Result<Json, String>;
 pub type Runner = Box<dyn Fn(&launch::Plan) -> Result<Option<std::process::Child>, String> + Send>;
 type Availability = (Option<Instant>, HashMap<String, launch::Plan>);
 type SteamCache = Option<(Instant, String, crate::steam::Discovery)>;
+type SourcesCache = Option<(Instant, Vec<crate::detect::Source>)>;
 
 /// Settings holding secrets: the page only ever sees "set", and sending "set" back keeps the stored value.
 const SECRETS: [&str; 4] = ["steamgriddbKey", "thegamesdbKey", "screenscraperDevPassword", "screenscraperPassword"];
@@ -41,6 +42,7 @@ pub struct App {
     pub media: Media,
     avail: Mutex<Availability>,
     steam: Mutex<SteamCache>,
+    sources: Mutex<SourcesCache>,
     /// Overridden by tests so nothing is ever started for real.
     pub runner: Mutex<Option<Runner>>,
     pub rng: Mutex<Option<Box<dyn Rng + Send>>>,
@@ -64,6 +66,7 @@ impl App {
             media: Media::default(),
             avail: Mutex::new((None, HashMap::new())),
             steam: Mutex::new(None),
+            sources: Mutex::new(None),
             runner: Mutex::new(None),
             rng: Mutex::new(None),
             paths,
@@ -126,6 +129,7 @@ impl App {
 
     pub fn refresh(&self) {
         *self.avail.lock().unwrap() = (None, HashMap::new());
+        *self.sources.lock().unwrap() = None;
         self.media.clear();
         self.catalog.reload();
     }
@@ -543,48 +547,117 @@ impl App {
 
     // ---- library: Steam and game folders
 
+    /// Every library source on this computer, each with what it found: Steam, ES-DE, Epic, GOG, RetroArch, Heroic, Lutris and your
+    /// game folders. Looked up at most once a minute (Refresh looks again).
+    pub fn sources(&self) -> Vec<crate::detect::Source> {
+        let mut c = self.sources.lock().unwrap();
+        if let Some((at, v)) = c.as_ref()
+            && at.elapsed() < Duration::from_secs(60)
+        {
+            return v.clone();
+        }
+        let st = self.settings();
+        let disc = self.steam();
+        let steam = crate::detect::Source {
+            id: "steam",
+            label: "Steam",
+            found_at: disc.libraries.iter().map(|(p, _)| p.clone()).collect(),
+            games: crate::steam::installed(&disc)
+                .into_iter()
+                .map(|a| crate::detect::Candidate {
+                    source: "steam",
+                    key: a.appid.to_string(),
+                    title: a.name,
+                    sys: "PC".into(),
+                    launch: Some(json!({"steam": a.appid})),
+                    media: None,
+                    extra: Map::new(),
+                })
+                .collect(),
+            ..Default::default()
+        };
+        let folders = crate::detect::Source {
+            id: "folder",
+            label: "Game folders",
+            found_at: st.game_dirs.iter().map(PathBuf::from).filter(|p| p.is_dir()).collect(),
+            games: crate::folders::scan(&st.game_dirs)
+                .into_iter()
+                .map(|f| crate::detect::Candidate {
+                    source: "folder",
+                    key: f.path.to_string_lossy().into(),
+                    title: f.title,
+                    sys: "PC".into(),
+                    launch: Some(f.launch),
+                    media: None,
+                    extra: Map::new(),
+                })
+                .collect(),
+            ..Default::default()
+        };
+        let mut all = vec![steam];
+        all.extend(crate::detect::all());
+        all.push(folders);
+        *c = Some((Instant::now(), all.clone()));
+        all
+    }
+
     pub fn library(&self) -> R {
         let st = self.settings();
-        let titles: HashSet<String> = self.catalog.games().iter().map(|g| s(g, "t").to_lowercase()).collect();
-        let ids: HashSet<u64> = self.catalog.games().iter().filter_map(launch::steam_id).collect();
+        let games = self.catalog.games();
+        let titles: HashSet<String> = games.iter().map(|g| s(g, "t").to_lowercase()).collect();
+        let ids: HashSet<u64> = games.iter().filter_map(launch::steam_id).collect();
+        let media: HashSet<(String, String)> =
+            games.iter().filter_map(|g| g.get("media")).map(|m| (s(m, "system").to_string(), s(m, "file").to_string())).collect();
+        let on_shelf = |c: &crate::detect::Candidate| {
+            titles.contains(&c.title.to_lowercase())
+                || (c.source == "steam" && c.key.parse::<u64>().is_ok_and(|id| ids.contains(&id)))
+                || c.media.as_ref().is_some_and(|m| media.contains(&(s(m, "system").to_string(), s(m, "file").to_string())))
+        };
+        let sources: Vec<Json> = self
+            .sources()
+            .iter()
+            .map(|src| {
+                json!({"id": src.id, "label": src.label, "foundAt": src.found_at.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>(), "note": src.note,
+                       "games": src.games.iter().map(|c| json!({"source": c.source, "key": c.key, "title": c.title, "sys": c.sys, "inCatalog": on_shelf(c), "canStart": c.launch.is_some()})).collect::<Vec<_>>()})
+            })
+            .collect();
         let disc = self.steam();
-        let root = disc.roots.first().cloned();
-        let steam: Vec<Json> = crate::steam::installed(&disc).into_iter()
-            .map(|a| json!({"source": "steam", "key": a.appid.to_string(), "title": a.name, "inCatalog": ids.contains(&a.appid) || titles.contains(&a.name.to_lowercase()), "art": root.as_deref().and_then(|r| crate::steam::cached_art(r, a.appid, "cover")).is_some()}))
-            .collect();
-        let folders: Vec<Json> = crate::folders::scan(&st.game_dirs).into_iter()
-            .map(|f| json!({"source": "folder", "key": f.path.to_string_lossy(), "title": f.title, "inCatalog": titles.contains(&f.title.to_lowercase()), "art": false}))
-            .collect();
-        let libraries: Vec<Json> = disc.libraries.iter().map(|(p, how)| json!({"path": p.to_string_lossy(), "how": how})).collect();
         Ok(
-            json!({"steamDir": root.map(|r| r.to_string_lossy().to_string()), "steamLibraries": libraries, "gameDirs": st.game_dirs, "steam": steam, "folders": folders}),
+            json!({"sources": sources, "gameDirs": st.game_dirs, "steamLibraries": disc.libraries.iter().map(|(p, how)| json!({"path": p.to_string_lossy(), "how": how})).collect::<Vec<_>>()}),
         )
     }
 
-    /// Add picked library games as drafts: enough to be drawn, marked to be checked (and filled in by a lookup if you like).
+    /// Add picked library games as drafts with everything their source could tell (players, a description, moods, art, how to start
+    /// them). They are drawn straight away and marked to be checked. Picking ES-DE games also adds ES-DE's art folder.
     pub fn import_library(&self, picks: &Value) -> R {
         let picks = picks.as_array().ok_or("picks must be a list")?;
-        let st = self.settings();
-        let steam: HashMap<String, crate::steam::App> = crate::steam::installed(&self.steam()).into_iter().map(|a| (a.appid.to_string(), a)).collect();
-        let folders: HashMap<String, crate::folders::FoundGame> =
-            crate::folders::scan(&st.game_dirs).into_iter().map(|f| (f.path.to_string_lossy().to_string(), f)).collect();
+        let sources = self.sources();
         let mut drafts = vec![];
-        for p in picks.iter().take(500) {
-            let (title, launch, source) = match (s(p, "source"), s(p, "key")) {
-                ("steam", k) => match steam.get(k) {
-                    Some(a) => (a.name.clone(), json!({"steam": a.appid}), "steam"),
-                    None => continue,
-                },
-                ("folder", k) => match folders.get(k) {
-                    Some(f) => (f.title.clone(), f.launch.clone(), "folder"),
-                    None => continue,
-                },
-                _ => continue,
-            };
-            let title = if s(p, "title").trim().is_empty() { title } else { s(p, "title").trim().chars().take(80).collect() };
-            drafts.push(json!({"t": title, "sys": "PC", "where": "couch", "p": "1-4", "mode": "Co-op", "gap": 3, "vibe": ["action"], "len": "evening", "why": DRAFT_WHY, "launch": launch, "draft": true, "source": source}));
+        let mut art_dirs: Vec<PathBuf> = vec![];
+        for p in picks.iter().take(2000) {
+            let (src, key) = (s(p, "source"), s(p, "key"));
+            let Some(source) = sources.iter().find(|x| x.id == src) else { continue };
+            let Some(c) = source.games.iter().find(|c| c.key == key) else { continue };
+            drafts.push(crate::detect::draft(c, DRAFT_WHY));
+            if let Some(a) = &source.art
+                && !art_dirs.contains(a)
+            {
+                art_dirs.push(a.clone());
+            }
         }
         let (n, refused) = self.catalog.add_many(&drafts)?;
+        let mut st = self.settings();
+        let before = st.media_dirs.len();
+        for a in art_dirs {
+            let path = a.to_string_lossy().to_string();
+            if !st.media_dirs.iter().any(|m| m.path.eq_ignore_ascii_case(&path)) {
+                st.media_dirs.push(config::MediaDir { path, layout: "esde".into() });
+            }
+        }
+        if st.media_dirs.len() != before {
+            config::save_settings(&self.paths.settings(), &st).map_err(|e| e.to_string())?;
+            *self.settings.write().unwrap() = st;
+        }
         self.refresh();
         Ok(json!({"added": n, "refused": refused}))
     }

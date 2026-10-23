@@ -517,3 +517,8 @@ body.halloween{
 .folderlist .path{flex:1 1 260px;font-family:ui-monospace,Consolas,monospace;font-size:.9rem;overflow-wrap:anywhere}
 .folders .row input[type=text]{flex:1 1 260px}
 .found{margin-top:.6rem}
+
+/* the Library screen's sources, and the empty shelf's welcome */
+.libsource summary{cursor:pointer;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.libgroup{margin-top:.8rem}
+.hero.welcome .row{margin:.4rem 0 .8rem}
