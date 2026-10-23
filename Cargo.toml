@@ -1,6 +1,6 @@
 [package]
 name = "gamenight"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 rust-version = "1.88"
 description = "Pick what to play tonight, for couples and friends: a fair, explainable game picker with Steam library import, a journal of your nights and controller support."

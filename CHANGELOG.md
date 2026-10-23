@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
+
+Playing together, two ways: on the couch, and online with friends whose Steam libraries Game Night can now see.
 
 - **Two ways of playing: on the couch and online, each with its own group.** Mark who plays on the couch and who plays online (Settings > Who's playing). Once both groups exist, Tonight gets an **On the couch · Online** switch. Each mode has its own players (their marks, the "All of us" tile, the after-game questions), its own turn, and its own games: same-screen games on the couch; online games plus Steam games Steam says play online, and only what everyone in the online group owns, online. Online swaps the One controller tile for "Something long-running" and hides the Where filter (the mode decides). A couple who only plays together sees no switch at all.
 - "Couch mode" (bigger text) is now called **Big text for the TV**, so "couch" means one thing.
