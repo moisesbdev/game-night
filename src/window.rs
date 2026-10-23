@@ -27,13 +27,25 @@ fn icon() -> Option<Icon> {
     Icon::from_rgba(px, N, N).ok()
 }
 
+/// The program's own icon (embedded at build time on Windows), else the drawn disc.
+fn app_icon() -> Option<Icon> {
+    #[cfg(windows)]
+    {
+        use tao::platform::windows::IconExtWindows;
+        if let Ok(i) = Icon::from_resource(1, None) {
+            return Some(i);
+        }
+    }
+    icon()
+}
+
 pub fn run(url: &str) -> Result<(), String> {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Game Night")
         .with_inner_size(LogicalSize::new(1280.0, 860.0))
         .with_min_inner_size(LogicalSize::new(720.0, 540.0))
-        .with_window_icon(icon())
+        .with_window_icon(app_icon())
         .build(&event_loop)
         .map_err(|e| e.to_string())?;
     let origin = url.trim_end_matches('/').to_string();

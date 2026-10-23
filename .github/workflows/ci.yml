@@ -39,3 +39,21 @@ jobs:
         with:
           node-version: 22
       - run: node --test "tests/js/*.test.mjs"
+
+  windows-exe:
+    # On demand ("Run workflow"): the real Windows release exe, checked to be one file, kept as a download for testing.
+    name: Windows exe
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
+      - run: cargo build --release
+      - shell: pwsh
+        run: ./packaging/windows/check-exe.ps1 target/release/gamenight.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gamenight-windows-exe
+          path: target/release/gamenight.exe

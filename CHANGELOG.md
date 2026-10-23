@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Windows: one file.** The release `gamenight.exe` carries the WebView2 loader and the C runtime inside it (nothing to install, no DLLs beside it), with its own icon, version details and a high-DPI manifest. The release build checks this and fails if the exe ever needs a file Windows doesn't ship. The window and taskbar use the same icon.
+- **Linux: a .deb** that installs a menu entry and icon and pulls in WebKitGTK; the plain and server-only builds stay as tarballs.
 - **Library detectors, shown together on first run.** An empty shelf now greets you with what's on this computer ("Found: Steam 27 · ES-DE 62 · GOG 8 · Epic 1") and one button to bring it in. Each detector finds its launcher by itself and reads its own records:
   - **ES-DE**: `~/ES-DE`, Flatpak, or a portable install on any drive; every system's gamelist with names, descriptions, players, genres (as moods) and dates; its downloaded art folder is added automatically. Steam/Windows/Epic/GOG systems are skipped (their own detectors cover them).
   - **Epic Games**: the launcher's install manifests (DLC and unfinished installs left out); Play opens the game through Epic.

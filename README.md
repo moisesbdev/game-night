@@ -21,9 +21,10 @@ Download the latest release for your system from the Releases page and run it. G
 
 | System | File | Notes |
 |---|---|---|
-| Windows 10 and 11 | `gamenight-windows-x86_64.zip` | Uses the WebView2 runtime that comes with Windows. |
-| Linux | `gamenight-linux-x86_64.tar.gz` | Needs WebKitGTK 4.1 (`libwebkit2gtk-4.1-0`), installed on most desktops. |
-| Linux, no window | `gamenight-linux-x86_64-headless.tar.gz` | Serves the page for any browser (`--headless`), for a home server or a handheld. |
+| Windows 10 and 11 | `gamenight-windows-x86_64.exe` | One file, nothing to install: run it. It uses the WebView2 runtime that comes with Windows; on the rare PC without it, Game Night opens in your browser instead. Put a `portable.txt` beside it to keep its data in a `data` folder next to it (a USB stick, say). |
+| Debian, Ubuntu, Mint, Pop!_OS | `gamenight-linux-x86_64.deb` | Installs Game Night with a menu entry and pulls in the one library its window needs (WebKitGTK). |
+| Other Linux | `gamenight-linux-x86_64.tar.gz` | One program; needs WebKitGTK 4.1 (`webkit2gtk-4.1`), which most desktops already have. |
+| Linux, no window | `gamenight-linux-x86_64-headless.tar.gz` | No libraries at all: serves the page for any browser (`--headless`), for a home server, a NAS or a handheld. |
 | macOS (Apple silicon) | `gamenight-macos-aarch64.tar.gz` | Unsigned; right-click > Open the first time. |
 
 Start it with `--browser` to use your usual browser instead of its own window, or `--headless` to run only the server and open `http://127.0.0.1:8770/` yourself.

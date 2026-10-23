@@ -9,48 +9,83 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+  windows:
+    name: Windows (single exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
+      - run: cargo test
+      - run: cargo build --release
+      - name: One file, nothing beside it
+        shell: pwsh
+        run: ./packaging/windows/check-exe.ps1 target/release/gamenight.exe
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item target/release/gamenight.exe gamenight-windows-x86_64.exe
+          Copy-Item target/release/gamenight.exe, README.md, LICENSE, CHANGELOG.md dist/
+          Compress-Archive -Path dist/* -DestinationPath gamenight-windows-x86_64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: gamenight-windows-x86_64.*
+
+  linux:
+    name: Linux (${{ matrix.name }})
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: windows-x86_64, os: windows-latest, args: "" }
-          - { name: linux-x86_64, os: ubuntu-24.04, args: "" }
-          - { name: linux-x86_64-headless, os: ubuntu-24.04, args: "--no-default-features --features scrape" }
-          - { name: macos-aarch64, os: macos-latest, args: "" }
+          - { name: x86_64, args: "" }
+          - { name: x86_64-headless, args: "--no-default-features --features scrape" }
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Linux window libraries
-        if: runner.os == 'Linux' && matrix.args == ''
+      - name: Window libraries
+        if: matrix.args == ''
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev
       - run: cargo test ${{ matrix.args }}
       - run: cargo build --release ${{ matrix.args }}
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory dist | Out-Null
-          Copy-Item target/release/gamenight.exe dist/
-          $loader = Get-ChildItem target/release -Recurse -Filter WebView2Loader.dll | Where-Object FullName -like '*x64*' | Select-Object -First 1
-          if ($loader) { Copy-Item $loader.FullName dist/ }   # shipped beside the exe in case this build loads it dynamically
-          Copy-Item README.md, LICENSE, CHANGELOG.md dist/
-          Compress-Archive -Path dist/* -DestinationPath gamenight-${{ matrix.name }}.zip
-      - name: Package (Linux, macOS)
-        if: runner.os != 'Windows'
+      - name: Package
         run: |
           mkdir dist
           cp target/release/gamenight README.md LICENSE CHANGELOG.md dist/
-          tar -czf gamenight-${{ matrix.name }}.tar.gz -C dist .
+          tar -czf gamenight-linux-${{ matrix.name }}.tar.gz -C dist .
+      - name: Debian package (pulls in WebKitGTK when installed)
+        if: matrix.args == ''
+        run: |
+          cargo install cargo-deb --locked
+          cargo deb --no-build --output gamenight-linux-x86_64.deb
       - uses: actions/upload-artifact@v4
         with:
-          name: gamenight-${{ matrix.name }}
-          path: gamenight-${{ matrix.name }}.*
+          name: linux-${{ matrix.name }}
+          path: gamenight-linux-*
+
+  macos:
+    name: macOS (Apple silicon)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
+      - run: cargo build --release
+      - name: Package
+        run: |
+          mkdir dist
+          cp target/release/gamenight README.md LICENSE CHANGELOG.md dist/
+          tar -czf gamenight-macos-aarch64.tar.gz -C dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: gamenight-macos-aarch64.tar.gz
 
   release:
-    needs: build
+    needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

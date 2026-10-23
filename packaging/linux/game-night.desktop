@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Game Night
+GenericName=Game picker
+Comment=Pick what to play tonight, for couples and friends
+Exec=gamenight
+Icon=game-night
+Terminal=false
+Categories=Game;
+Keywords=games;picker;couch;co-op;steam;party;
+StartupWMClass=gamenight
