@@ -17,8 +17,8 @@ jobs:
       matrix:
         include:
           - { name: windows-x86_64, os: windows-latest, args: "" }
-          - { name: linux-x86_64, os: ubuntu-22.04, args: "" }
-          - { name: linux-x86_64-headless, os: ubuntu-22.04, args: "--no-default-features --features scrape" }
+          - { name: linux-x86_64, os: ubuntu-24.04, args: "" }
+          - { name: linux-x86_64-headless, os: ubuntu-24.04, args: "--no-default-features --features scrape" }
           - { name: macos-aarch64, os: macos-latest, args: "" }
     steps:
       - uses: actions/checkout@v4
