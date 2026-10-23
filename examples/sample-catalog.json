@@ -1,0 +1,1325 @@
+{
+  "games": [
+    {
+      "t": "Super Mario Bros. Wonder",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-4",
+      "mode": "True co-op",
+      "gap": 5,
+      "vibe": [
+        "action",
+        "silly"
+      ],
+      "len": "long",
+      "why": "Fast, bright 2D Mario. Players can't block or hurt each other.",
+      "role": "Yoshi and Nabbit take no damage (and can't use power-ups), which makes them good picks for a relaxed run.",
+      "watch": "The Switch 2 content isn't included.",
+      "time": "about 10 hours to finish",
+      "trailer": "ljx3QQ4uApg",
+      "coop": "qcd0-Vn9_So",
+      "coopKind": "local",
+      "coopBy": "GameXplain",
+      "info": {
+        "year": 2023,
+        "developer": "Nintendo EPD",
+        "publisher": "Nintendo",
+        "genres": [
+          "platformer",
+          "action"
+        ],
+        "tags": [
+          "Action",
+          "Platforming",
+          "Choose your difficulty",
+          "Meet up and play together",
+          "Online co-op",
+          "Play online with friends",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E",
+        "descriptors": [
+          "mild fantasy violence"
+        ],
+        "hltb": {
+          "main": 10,
+          "extras": 13.5,
+          "full": 20
+        },
+        "scores": {
+          "metacritic": 92
+        },
+        "localPlay": "Local co-op for 1-4 on one console (Joy-Con or controllers); online with up to 4; up to 12 can share a room.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/super-mario-bros-wonder-switch/",
+          "https://dekudeals.com/items/super-mario-bros-wonder",
+          "https://en.wikipedia.org/wiki/Super_Mario_Bros._Wonder"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Mario Kart 8 Deluxe",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-4",
+      "mode": "Race / teams",
+      "gap": 4,
+      "vibe": [
+        "action",
+        "compete",
+        "silly"
+      ],
+      "len": "quick",
+      "why": "Easy to pick up, and items shuffle the finishing order.",
+      "role": "Smart Steering and Auto-Accelerate are set per player, so you can mix assisted and unassisted.",
+      "watch": "Auto-Accelerate isn't available in Battle mode.",
+      "time": "races of about 3 minutes",
+      "trailer": "ZKB9FEXhJ68",
+      "coop": "NPTwhXLJXgg",
+      "coopKind": "local",
+      "coopBy": "Local Multiplayer",
+      "info": {
+        "year": 2017,
+        "developer": "Nintendo EPD",
+        "publisher": "Nintendo",
+        "genres": [
+          "kart racing",
+          "party"
+        ],
+        "tags": [
+          "Racing",
+          "Party",
+          "Choose your difficulty",
+          "Motion controls",
+          "Compete online",
+          "Play online with friends",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E",
+        "descriptors": [
+          "comic mischief"
+        ],
+        "hltb": {
+          "main": 6.5,
+          "extras": 22.5,
+          "full": 54
+        },
+        "scores": {
+          "metacritic": 92
+        },
+        "localPlay": "Split-screen for 1-4 on one Switch; local wireless for 2-8 on several consoles; online for up to 12.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/mario-kart-8-deluxe-switch/",
+          "https://dekudeals.com/items/mario-kart-8-deluxe",
+          "https://en.wikipedia.org/wiki/Mario_Kart_8_Deluxe"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Kirby and the Forgotten Land",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-2",
+      "mode": "Helper seat",
+      "gap": 4,
+      "vibe": [
+        "cozy",
+        "action"
+      ],
+      "len": "long",
+      "why": "Gentle 3D adventure where the second player is Bandana Waddle Dee.",
+      "role": "Bandana Dee fights with a spear and has no copy abilities.",
+      "watch": "Co-op unlocks after the first stage.",
+      "time": "about 10 hours to finish",
+      "trailer": "0oTBOQ5rp58",
+      "coop": "hPrv19uzOtk",
+      "coopKind": "local",
+      "coopBy": "Open Surprise",
+      "one": true,
+      "info": {
+        "year": 2022,
+        "developer": "HAL Laboratory",
+        "publisher": "Nintendo",
+        "genres": [
+          "platformer",
+          "action",
+          "adventure"
+        ],
+        "tags": [
+          "Action",
+          "Adventure",
+          "Platforming",
+          "Choose your difficulty",
+          "Play for a high score",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "cartoon violence"
+        ],
+        "hltb": {
+          "main": 10.5,
+          "extras": 15.5,
+          "full": 26
+        },
+        "scores": {
+          "metacritic": 85
+        },
+        "localPlay": "Two-player local co-op on one console, with player 2 as Bandana Waddle Dee; no online co-op.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/kirby-and-the-forgotten-land-switch/",
+          "https://dekudeals.com/items/kirby-and-the-forgotten-land",
+          "https://en.wikipedia.org/wiki/Kirby_and_the_Forgotten_Land"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Super Mario Party Jamboree",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "2-4",
+      "mode": "Party",
+      "gap": 5,
+      "vibe": [
+        "silly",
+        "compete"
+      ],
+      "len": "evening",
+      "why": "Short mini-games where luck is a big part of the result.",
+      "role": "Each mini-game is explained as it starts.",
+      "watch": "Motion mini-games need Joy-Con; they can be switched off.",
+      "time": "a board game of 30 to 60 minutes",
+      "trailer": "sZNeut6RR4I",
+      "coop": "wfomrPPIvU8",
+      "coopKind": "local",
+      "coopBy": "PartyLand",
+      "info": {
+        "year": 2024,
+        "developer": "NDcube",
+        "publisher": "Nintendo",
+        "genres": [
+          "party",
+          "board game"
+        ],
+        "tags": [
+          "Action",
+          "Party",
+          "Tabletop",
+          "Minigames",
+          "Online scoreboards",
+          "Compete online",
+          "Online co-op",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E",
+        "descriptors": [
+          "mild fantasy violence"
+        ],
+        "hltb": {
+          "main": 7.5,
+          "extras": 19.5,
+          "full": 52.5
+        },
+        "scores": {
+          "metacritic": 82
+        },
+        "localPlay": "Local play for up to 4 on one console; online matchmaking for up to 20 in some modes.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/super-mario-party-jamboree-switch/",
+          "https://dekudeals.com/items/super-mario-party-jamboree",
+          "https://en.wikipedia.org/wiki/Super_Mario_Party_Jamboree"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Luigi's Mansion 3",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-8",
+      "mode": "True co-op",
+      "gap": 4,
+      "vibe": [
+        "spooky",
+        "cozy",
+        "brain"
+      ],
+      "len": "long",
+      "why": "The second player is Gooigi, who respawns within seconds and ignores spikes.",
+      "role": "Gooigi is unlocked partway through the story and can't wander far from Luigi.",
+      "watch": "Slow and exploratory, not fast.",
+      "time": "about 13 hours to finish",
+      "trailer": "rgldcSmxY5o",
+      "coop": "Rm-tEmazyNQ",
+      "coopKind": "local",
+      "coopBy": "IGN",
+      "one": true,
+      "info": {
+        "year": 2019,
+        "developer": "Next Level Games",
+        "publisher": "Nintendo",
+        "genres": [
+          "action-adventure",
+          "puzzle"
+        ],
+        "tags": [
+          "Action",
+          "Adventure",
+          "Puzzle-solving elements",
+          "Online co-op",
+          "Play together on multiple consoles",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E",
+        "descriptors": [
+          "comic mischief",
+          "mild cartoon violence"
+        ],
+        "hltb": {
+          "main": 13,
+          "extras": 17,
+          "full": 22
+        },
+        "scores": {
+          "metacritic": 86
+        },
+        "localPlay": "Campaign co-op for 2 on one console (Luigi and Gooigi); ScreamPark takes up to 8 on one console; ScareScraper up to 8 over 4 consoles.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/luigis-mansion-3-switch/",
+          "https://dekudeals.com/items/luigis-mansion-3",
+          "https://en.wikipedia.org/wiki/Luigi%27s_Mansion_3",
+          "https://en-americas-support.nintendo.com/app/answers/detail/a_id/47978/"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "It Takes Two",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "2",
+      "mode": "True co-op",
+      "gap": 3,
+      "vibe": [
+        "story",
+        "action",
+        "brain"
+      ],
+      "len": "long",
+      "why": "Built for exactly two players. The genre changes every chapter.",
+      "role": "Most puzzles need patience more than reflexes.",
+      "watch": "Two players required. Lower performance on Switch.",
+      "time": "about 13 hours to finish",
+      "trailer": "GAWHzGNcTEw",
+      "coop": "MU_yZ10SyWI",
+      "coopKind": "local",
+      "coopBy": "Rob64 Gaming",
+      "info": {
+        "year": 2022,
+        "developer": "Hazelight Studios",
+        "publisher": "Electronic Arts",
+        "genres": [
+          "action-adventure",
+          "platformer",
+          "puzzle"
+        ],
+        "tags": [
+          "Action",
+          "Adventure",
+          "Platforming",
+          "Puzzle-solving elements",
+          "Voiced characters",
+          "Online co-op",
+          "Play together on one console"
+        ],
+        "rating": "ESRB T",
+        "descriptors": [
+          "animated blood",
+          "comic mischief",
+          "fantasy violence",
+          "language"
+        ],
+        "hltb": {
+          "main": 14,
+          "extras": null,
+          "full": null
+        },
+        "scores": {
+          "metacritic": 83,
+          "steamPct": 95
+        },
+        "localPlay": "Exactly 2 players only: split-screen on one console, local wireless, or online; the buyer can share it free with a Friend's Pass.",
+        "steamAppId": 1426210,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/it-takes-two-switch/",
+          "https://dekudeals.com/items/it-takes-two",
+          "https://en.wikipedia.org/wiki/It_Takes_Two_(video_game)",
+          "https://store.steampowered.com/app/1426210",
+          "https://steamspy.com/api.php?request=appdetails&appid=1426210"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Portal 2",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "2",
+      "mode": "True co-op",
+      "gap": 4,
+      "vibe": [
+        "brain",
+        "silly",
+        "story"
+      ],
+      "len": "evening",
+      "why": "Puzzle teamwork that needs thinking more than twitch skill. Local split-screen is included.",
+      "role": "Talking through the layout is half the game.",
+      "watch": "The co-op campaign is in the second game; the first Portal is single player.",
+      "time": "roughly 6 hours for the co-op campaign (sources vary)",
+      "trailer": "A88YiZdXugA",
+      "info": {
+        "year": 2022,
+        "developer": "Valve",
+        "publisher": "Valve",
+        "genres": [
+          "puzzle-platformer",
+          "first-person"
+        ],
+        "tags": [
+          "Action",
+          "Puzzle",
+          "Online scoreboards",
+          "Play for the fastest time",
+          "Voiced characters",
+          "Online co-op",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "fantasy violence",
+          "mild language"
+        ],
+        "hltb": {
+          "main": 8.5,
+          "extras": 14,
+          "full": 23
+        },
+        "scores": {
+          "metacritic": 95,
+          "steamPct": 99
+        },
+        "localPlay": "Co-op for 2 players: split-screen on one console, local wireless, or online; the single-player campaign is separate.",
+        "steamAppId": 620,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/portal-2-switch/",
+          "https://dekudeals.com/items/portal-2",
+          "https://en.wikipedia.org/wiki/Portal_2",
+          "https://store.steampowered.com/app/620",
+          "https://steamspy.com/api.php?request=appdetails&appid=620"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Stardew Valley",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-2",
+      "mode": "True co-op",
+      "gap": 5,
+      "vibe": [
+        "cozy"
+      ],
+      "len": "long",
+      "why": "A shared farm with no fail state, so you can split the jobs however you like.",
+      "role": "Farming, mining and fishing are easy to divide.",
+      "watch": "Same-screen play is limited to 2 on the original Switch, and each player needs a full controller.",
+      "time": "about 50 hours for the main goals",
+      "trailer": "-vlBE3vSfNU",
+      "coop": "c7MB-LnXT3U",
+      "coopKind": "local",
+      "coopBy": "SDDPlayers",
+      "one": true,
+      "info": {
+        "year": 2017,
+        "developer": "ConcernedApe",
+        "publisher": "ConcernedApe",
+        "genres": [
+          "farming sim",
+          "simulation",
+          "role-playing"
+        ],
+        "tags": [
+          "Farming Sim",
+          "Pixel Graphics",
+          "Multiplayer",
+          "Life Sim",
+          "RPG",
+          "Relaxing",
+          "Simulation",
+          "Crafting",
+          "Sandbox",
+          "Cute",
+          "Fishing",
+          "Dating Sim"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "fantasy violence",
+          "mild blood",
+          "mild language",
+          "use of alcohol",
+          "use of tobacco",
+          "simulated gambling"
+        ],
+        "hltb": {
+          "main": 53.5,
+          "extras": 95,
+          "full": 172.5
+        },
+        "scores": {
+          "metacritic": 87,
+          "steamPct": 98
+        },
+        "localPlay": "Online co-op for up to 4; local wireless between consoles; the 1.5 update added split-screen, listed as 2 players on Switch.",
+        "steamAppId": 413150,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/stardew-valley-switch/",
+          "https://dekudeals.com/items/stardew-valley",
+          "https://en.wikipedia.org/wiki/Stardew_Valley",
+          "https://store.steampowered.com/app/413150",
+          "https://steamspy.com/api.php?request=appdetails&appid=413150"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Cult of the Lamb",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-2",
+      "mode": "Co-op",
+      "gap": 4,
+      "vibe": [
+        "cozy",
+        "action",
+        "silly"
+      ],
+      "len": "long",
+      "why": "A cute cult-management game with quick dungeon runs.",
+      "role": "The second player joins dungeon fights as the Goat.",
+      "watch": "The camp is effectively single-player.",
+      "time": "about 14 hours to finish",
+      "trailer": "xsPtUNB1z-Q",
+      "coop": "Gq10isYk4I0",
+      "coopKind": "local",
+      "coopBy": "Põe Pra 2 Co-op Gaming",
+      "one": true,
+      "info": {
+        "year": 2022,
+        "developer": "Massive Monster",
+        "publisher": "Devolver Digital",
+        "genres": [
+          "roguelike",
+          "action",
+          "management sim"
+        ],
+        "tags": [
+          "Base-Building",
+          "Cute",
+          "Action Roguelike",
+          "Dungeon Crawler",
+          "Character Customization",
+          "Rogue-lite",
+          "Dark Humor",
+          "Colony Sim",
+          "Choose your difficulty",
+          "Random maps & levels",
+          "Start over if you fail",
+          "Play together on one console"
+        ],
+        "rating": "ESRB T",
+        "descriptors": [
+          "blood",
+          "crude humor",
+          "fantasy violence"
+        ],
+        "hltb": {
+          "main": 14.5,
+          "extras": 20,
+          "full": 30.5
+        },
+        "scores": {
+          "metacritic": 79,
+          "steamPct": 96
+        },
+        "localPlay": "Single player by default; the free Unholy Alliance update adds 2-player local co-op as the Goat.",
+        "steamAppId": 1313140,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/cult-of-the-lamb-switch/",
+          "https://dekudeals.com/items/cult-of-the-lamb-switch",
+          "https://en.wikipedia.org/wiki/Cult_of_the_Lamb",
+          "https://store.steampowered.com/app/1313140",
+          "https://steamspy.com/api.php?request=appdetails&appid=1313140"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Gang Beasts",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-4",
+      "mode": "Party",
+      "gap": 5,
+      "vibe": [
+        "silly",
+        "compete"
+      ],
+      "len": "quick",
+      "why": "Wobbly physics brawler where everyone flails.",
+      "role": "Skill matters less than you'd expect.",
+      "watch": "Runs poorly on Switch.",
+      "time": "rounds of 1 to 3 minutes",
+      "trailer": "Vz0BriND6pE",
+      "coop": "f6nEqE5hPXg",
+      "coopKind": "local",
+      "coopBy": "Gaming Exhibit",
+      "info": {
+        "year": 2021,
+        "developer": "Boneloaf, Rocket Science",
+        "publisher": "Boneloaf",
+        "genres": [
+          "action",
+          "party",
+          "beat 'em up"
+        ],
+        "tags": [
+          "Funny",
+          "Physics",
+          "Multiplayer",
+          "Colorful",
+          "Party Game",
+          "Local Multiplayer",
+          "Party",
+          "Fighting",
+          "Comedy",
+          "3D Fighter",
+          "Casual",
+          "4 Player Local",
+          "Co-op",
+          "Family Friendly"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "cartoon violence"
+        ],
+        "scores": {
+          "metacritic": 68,
+          "steamPct": 85
+        },
+        "localPlay": "1-4 players on one console, 2-8 by local wireless, 1-8 online.",
+        "steamAppId": 285900,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/gang-beasts-switch/",
+          "https://www.dekudeals.com/items/gang-beasts",
+          "https://steamspy.com/api.php?request=appdetails&appid=285900",
+          "https://en.wikipedia.org/wiki/Gang_Beasts"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Super Smash Bros. Ultimate",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-8",
+      "mode": "Versus / co-op",
+      "gap": 2,
+      "vibe": [
+        "action",
+        "compete"
+      ],
+      "len": "quick",
+      "why": "Huge cast, and Classic Mode can be played as a team of two.",
+      "role": "Per-player handicap (starting damage %) is in the rules menu.",
+      "watch": "World of Light is single-player only. Steep skill gap in versus.",
+      "time": "matches of 3 to 5 minutes",
+      "trailer": "WLu7e8RZoYc",
+      "coop": "QrZn4trMK_U",
+      "coopKind": "local",
+      "coopBy": "MultiMario",
+      "info": {
+        "year": 2018,
+        "developer": "Bandai Namco Studios, Sora Ltd.",
+        "publisher": "Nintendo",
+        "genres": [
+          "fighting",
+          "platform fighter",
+          "party"
+        ],
+        "tags": [
+          "Action",
+          "Fighting",
+          "Party",
+          "Choose your difficulty",
+          "Online scoreboards",
+          "Toy-Con compatible",
+          "Voiced characters",
+          "Compete online",
+          "Online co-op"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "cartoon violence",
+          "comic mischief",
+          "suggestive themes"
+        ],
+        "hltb": {
+          "main": 24,
+          "extras": 42.5,
+          "full": 76.5
+        },
+        "scores": {
+          "metacritic": 93
+        },
+        "localPlay": "1-8 players on one console, 2-8 by local wireless, 2-4 online.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/super-smash-bros-ultimate-switch/",
+          "https://www.dekudeals.com/items/super-smash-bros-ultimate"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Pikmin 4",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1-2",
+      "mode": "Helper seat",
+      "gap": 3,
+      "vibe": [
+        "cozy",
+        "brain"
+      ],
+      "len": "long",
+      "why": "A relaxed strategy game. The second player throws stun pebbles with the pointer.",
+      "role": "Dandori Battle is a proper two-player mode.",
+      "watch": "The story-mode helper is pointer-only.",
+      "time": "about 17 hours to finish",
+      "trailer": "tqpbMLVa9EI",
+      "coop": "x5URwwO6TPQ",
+      "coopKind": "local",
+      "coopBy": "Two Can Play At That Game",
+      "one": true,
+      "info": {
+        "year": 2023,
+        "developer": "Nintendo EPD, Eighting",
+        "publisher": "Nintendo",
+        "genres": [
+          "real-time strategy",
+          "puzzle",
+          "adventure"
+        ],
+        "tags": [
+          "Action",
+          "Adventure",
+          "Strategy",
+          "Character customization",
+          "Defend your territory",
+          "Motion controls",
+          "Quick decision-making",
+          "Survival",
+          "Play together on one console"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "comic mischief",
+          "fantasy violence"
+        ],
+        "hltb": {
+          "main": 17.5,
+          "extras": 29,
+          "full": 40
+        },
+        "scores": {
+          "metacritic": 87
+        },
+        "localPlay": "Two players on one console: story-mode helper and the Dandori Battle mode; no online play.",
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/pikmin-4-switch/",
+          "https://www.dekudeals.com/items/pikmin-4",
+          "https://en.wikipedia.org/wiki/Pikmin_4"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "LEGO Star Wars: The Skywalker Saga",
+      "sys": "PC",
+      "where": "couch",
+      "p": "1-2",
+      "mode": "True co-op",
+      "gap": 5,
+      "vibe": [
+        "cozy",
+        "action",
+        "silly"
+      ],
+      "len": "long",
+      "why": "Smash, build and collect across all of Star Wars. Drop-in co-op.",
+      "role": "Ship sections are the fiddliest part.",
+      "watch": "A second gamepad is the reliable way to play together on PC.",
+      "time": "about 18 hours to finish",
+      "trailer": "Lt0XCuvBH4Q",
+      "coop": "s5_X2LoisQw",
+      "coopKind": "local",
+      "coopBy": "Põe Pra 2 Co-op Gaming",
+      "info": {
+        "year": 2022,
+        "developer": "TT Games",
+        "publisher": "Warner Bros. Games",
+        "genres": [
+          "action",
+          "adventure"
+        ],
+        "tags": [
+          "LEGO",
+          "Adventure",
+          "Co-op",
+          "Multiplayer",
+          "Open World",
+          "Space",
+          "Local Co-Op",
+          "Action",
+          "Sci-fi",
+          "Singleplayer",
+          "Funny",
+          "Family Friendly",
+          "Third Person",
+          "Story Rich"
+        ],
+        "rating": "ESRB E10+",
+        "descriptors": [
+          "cartoon violence",
+          "comic mischief"
+        ],
+        "hltb": {
+          "main": 18.5,
+          "extras": 34.5,
+          "full": 89.5
+        },
+        "scores": {
+          "metacritic": 78,
+          "steamPct": 91
+        },
+        "controller": "full",
+        "localPlay": "Two-player drop-in split-screen co-op on one machine; no online co-op listed.",
+        "steamAppId": 920210,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=920210",
+          "https://steamspy.com/api.php?request=appdetails&appid=920210",
+          "https://www.dekudeals.com/items/lego-star-wars-the-skywalker-saga"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Left 4 Dead 2",
+      "sys": "PC",
+      "where": "online",
+      "p": "1-4",
+      "mode": "True co-op",
+      "gap": 3,
+      "vibe": [
+        "action",
+        "spooky"
+      ],
+      "len": "evening",
+      "why": "Zombie shooter built for teams, with short levels. Bots fill empty slots.",
+      "role": "Easy difficulty is forgiving.",
+      "watch": "Online only unless you add community splitscreen mods. Gore and jump scares.",
+      "time": "campaigns of roughly 45 to 90 minutes",
+      "trailer": "N1shYxPdGB8",
+      "coop": "6mY8P8q6LH0",
+      "coopKind": "online",
+      "coopBy": "The Co-op Mode",
+      "info": {
+        "year": 2009,
+        "developer": "Valve",
+        "publisher": "Valve",
+        "genres": [
+          "action",
+          "first-person shooter",
+          "survival horror"
+        ],
+        "tags": [
+          "Zombies",
+          "Co-op",
+          "FPS",
+          "Multiplayer",
+          "Shooter",
+          "Online Co-Op",
+          "Action",
+          "Survival",
+          "Horror",
+          "First-Person",
+          "Gore",
+          "Team-Based",
+          "Moddable",
+          "Survival Horror"
+        ],
+        "rating": "ESRB M",
+        "descriptors": [
+          "blood and gore",
+          "intense violence",
+          "language"
+        ],
+        "hltb": {
+          "main": 10,
+          "extras": 26,
+          "full": 57
+        },
+        "scores": {
+          "metacritic": 89,
+          "steamPct": 98
+        },
+        "controller": "full",
+        "localPlay": "Online co-op for up to 4 (bots fill gaps); no local split-screen on PC without mods.",
+        "steamAppId": 550,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=550",
+          "https://steamspy.com/api.php?request=appdetails&appid=550",
+          "https://en.wikipedia.org/wiki/Left_4_Dead_2"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Deep Rock Galactic",
+      "sys": "PC",
+      "where": "online",
+      "p": "1-4",
+      "mode": "True co-op",
+      "gap": 4,
+      "vibe": [
+        "action"
+      ],
+      "len": "evening",
+      "why": "Dwarves digging for gold. Each class has a clear job.",
+      "role": "Scout, Driller, Engineer and Gunner play very differently.",
+      "watch": "Online only; you each need a copy.",
+      "time": "missions of 15 to 30 minutes",
+      "trailer": "k4m_5JYrAGM",
+      "coop": "0XiGK0r_4es",
+      "coopKind": "online",
+      "coopBy": "Gamersyde Official",
+      "info": {
+        "year": 2020,
+        "developer": "Ghost Ship Games",
+        "publisher": "Coffee Stain Publishing",
+        "genres": [
+          "action"
+        ],
+        "tags": [
+          "Dwarf",
+          "Co-op",
+          "PvE",
+          "FPS",
+          "Procedural Generation",
+          "Class-Based",
+          "Shooter",
+          "Exploration",
+          "First-Person",
+          "Loot",
+          "Sci-fi",
+          "Space",
+          "Action",
+          "Atmospheric"
+        ],
+        "rating": "ESRB T",
+        "descriptors": [
+          "violence",
+          "use of alcohol",
+          "strong language"
+        ],
+        "hltb": {
+          "main": 43,
+          "extras": 137,
+          "full": 480
+        },
+        "scores": {
+          "metacritic": 85,
+          "steamPct": 97
+        },
+        "controller": "full",
+        "localPlay": "Online co-op for up to 4; no local split-screen.",
+        "steamAppId": 548430,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=548430",
+          "https://steamspy.com/api.php?request=appdetails&appid=548430",
+          "https://www.dekudeals.com/items/deep-rock-galactic"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Risk of Rain 2",
+      "sys": "PC",
+      "where": "online",
+      "p": "1-4",
+      "mode": "True co-op",
+      "gap": 2,
+      "vibe": [
+        "action"
+      ],
+      "len": "evening",
+      "why": "Item-stacking shooter that rewards surviving.",
+      "role": "Support characters are easier to play.",
+      "watch": "Gets very busy. Online only, no splitscreen on PC.",
+      "time": "runs of roughly 30 to 60 minutes",
+      "trailer": "OJAV0J7gRMA",
+      "info": {
+        "year": 2020,
+        "developer": "Hopoo Games",
+        "publisher": "Gearbox Publishing",
+        "genres": [
+          "action",
+          "indie",
+          "roguelite"
+        ],
+        "tags": [
+          "Third-Person Shooter",
+          "Action Roguelike",
+          "Multiplayer",
+          "Co-op",
+          "Action",
+          "Rogue-lite",
+          "Rogue-like",
+          "Looter Shooter",
+          "Loot",
+          "Online Co-Op",
+          "Shooter",
+          "Great Soundtrack",
+          "Difficult",
+          "Third Person"
+        ],
+        "rating": "ESRB T",
+        "descriptors": [
+          "blood",
+          "drug reference",
+          "fantasy violence"
+        ],
+        "hltb": {
+          "main": 11,
+          "extras": 44,
+          "full": 150
+        },
+        "scores": {
+          "metacritic": 85,
+          "steamPct": 93
+        },
+        "controller": "full",
+        "localPlay": "Online co-op for up to 4 on PC; split-screen exists only on console versions.",
+        "steamAppId": 632360,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=632360",
+          "https://steamspy.com/api.php?request=appdetails&appid=632360",
+          "https://www.dekudeals.com/items/risk-of-rain-2"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Tabletop Simulator",
+      "sys": "PC",
+      "where": "online",
+      "p": "1-10",
+      "mode": "Take turns",
+      "gap": 5,
+      "vibe": [
+        "brain",
+        "compete",
+        "silly"
+      ],
+      "len": "evening",
+      "why": "Board and card games on screen, with the same rules for everyone.",
+      "role": "Works best with a game you both know.",
+      "watch": "Needs the game rules or a mod.",
+      "time": "one board game, roughly 1 to 3 hours",
+      "trailer": "lKZVGZEuCHo",
+      "coop": "YvAVP0_kJ4Q",
+      "coopKind": "online",
+      "coopBy": "Polygon",
+      "info": {
+        "year": 2015,
+        "developer": "Berserk Games",
+        "publisher": "Berserk Games",
+        "genres": [
+          "casual",
+          "indie",
+          "simulation",
+          "strategy",
+          "rpg"
+        ],
+        "tags": [
+          "Tabletop",
+          "Board Game",
+          "Simulation",
+          "Multiplayer",
+          "Sandbox",
+          "Card Game",
+          "VR",
+          "Trading Card Game",
+          "Physics",
+          "Moddable",
+          "3D",
+          "Strategy",
+          "Online Co-Op",
+          "Casual"
+        ],
+        "rating": "USK 12",
+        "scores": {
+          "steamPct": 94
+        },
+        "controller": "full",
+        "localPlay": "Online play with friends; Steam also lists shared-screen play on one PC.",
+        "steamAppId": 286160,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=286160",
+          "https://steamspy.com/api.php?request=appdetails&appid=286160",
+          "https://www.dekudeals.com/items/tabletop-simulator"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Totally Reliable Delivery Service",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "2-4",
+      "mode": "Co-op / party",
+      "gap": 5,
+      "vibe": [
+        "silly",
+        "action"
+      ],
+      "len": "quick",
+      "why": "Physics-driven ragdoll delivery runs with vans and cargo, played in short, funny rounds on a split screen.",
+      "role": "Split-screen layouts exist for two, three and four players on one console.",
+      "watch": "A 2020 review reported stuttering and glitchy controls with more than one player; later updates weren't checked.",
+      "time": "deliveries of roughly 5 to 15 minutes",
+      "trailer": "60pJXqYXm1E",
+      "coop": "5RIU0DzCuak",
+      "coopKind": "local",
+      "coopBy": "Gaming Exhibit",
+      "info": {
+        "year": 2020,
+        "developer": "We're Five Games",
+        "publisher": "Atari (Infogrames); first published by tinyBuild",
+        "genres": [
+          "action",
+          "party",
+          "physics sandbox"
+        ],
+        "tags": [
+          "Action",
+          "Choose your own path",
+          "Free roaming",
+          "Online co-op",
+          "Play together on one console",
+          "Sandbox",
+          "Physics",
+          "Funny",
+          "Casual",
+          "Co-op",
+          "Open World",
+          "Local Multiplayer",
+          "Split Screen",
+          "4 Player Local"
+        ],
+        "rating": "ESRB E",
+        "descriptors": [
+          "crude humor",
+          "mild fantasy violence"
+        ],
+        "hltb": {
+          "main": 3,
+          "extras": 8,
+          "full": 11
+        },
+        "scores": {
+          "metacritic": 42,
+          "steamPct": 82
+        },
+        "localPlay": "Nintendo lists 1-2 on one console and 1-4 online; Co-Optimus and Steam tags report up to 4 local split-screen.",
+        "steamAppId": 1011670,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://www.nintendo.com/us/store/products/totally-reliable-delivery-service-switch/",
+          "https://www.dekudeals.com/items/totally-reliable-delivery-service",
+          "https://store.steampowered.com/api/appdetails?appids=1011670",
+          "https://steamspy.com/api.php?request=appdetails&appid=1011670",
+          "https://en.wikipedia.org/wiki/Totally_Reliable_Delivery_Service"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Celeste",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1",
+      "mode": "Take turns",
+      "gap": 2,
+      "vibe": [
+        "story",
+        "action"
+      ],
+      "len": "long",
+      "why": "A precision platformer in which Madeline climbs Celeste Mountain through 700-plus hand-made screens, with a story about anxiety and self-doubt. Each screen is a short puzzle of jumps, dashes and climbs, so it is easy to follow and cheer on.",
+      "role": "Controls are only jump, air-dash and climb. Assist Mode can slow the game down, give unlimited dashes or invincibility; it changes the difficulty but adds no second player. Checkpoints come every screen, so passing the controller between screens is simple.",
+      "watch": "Difficult in places; many deaths per screen is normal. The story deals with anxiety, depression and a panic attack. ESRB descriptors: alcohol reference, fantasy violence, mild language. Single player only.",
+      "time": "about 8 hours for the main story",
+      "trailer": "FqBj2IGg6Uw",
+      "one": true,
+      "info": {
+        "year": 2018,
+        "developer": "Maddy Makes Games, Extremely OK Games",
+        "publisher": "Maddy Makes Games",
+        "genres": [
+          "platformer",
+          "action",
+          "adventure",
+          "indie"
+        ],
+        "tags": [
+          "Precision Platformer",
+          "Difficult",
+          "Pixel Graphics",
+          "Great Soundtrack",
+          "Indie",
+          "Platformer",
+          "2D Platformer",
+          "Female Protagonist",
+          "Singleplayer",
+          "2D"
+        ],
+        "descriptors": [
+          "alcohol reference",
+          "fantasy violence",
+          "mild language"
+        ],
+        "hltb": {
+          "main": 8,
+          "extras": 15,
+          "full": 39
+        },
+        "scores": {
+          "metacritic": 88,
+          "steamPct": 97
+        },
+        "localPlay": "One player only; Assist Mode eases the difficulty but adds no second player.",
+        "steamAppId": 504230,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=504230",
+          "https://steamspy.com/api.php?request=appdetails&appid=504230",
+          "https://www.nintendo.com/us/store/products/celeste-switch/",
+          "https://en.wikipedia.org/wiki/Celeste_(video_game)"
+        ]
+      },
+      "source": "sample"
+    },
+    {
+      "t": "Hades",
+      "sys": "Switch",
+      "where": "couch",
+      "p": "1",
+      "mode": "Take turns",
+      "gap": 2,
+      "vibe": [
+        "action",
+        "story"
+      ],
+      "len": "long",
+      "why": "A fast isometric action roguelite in which the Prince of the Underworld fights his way out through four regions, choosing god boons along the way. Each death returns him to the House of Hades, where conversations move the story forward, so every attempt is a short chapter.",
+      "role": "Single player with one controller. A run usually lasts around half an hour, so passing the controller after each escape attempt works naturally. God Mode lowers the damage taken after each failed run.",
+      "watch": "Rated T (alcohol reference, blood, mild language, suggestive themes, violence). Real-time combat with dodging and lots of enemies on screen. Dying is part of the loop. Romance storylines and stylised nudity appear in the story.",
+      "time": "about 23 hours for the main story",
+      "trailer": "mD8x5xLHRho",
+      "one": true,
+      "info": {
+        "year": 2020,
+        "developer": "Supergiant Games",
+        "publisher": "Supergiant Games",
+        "genres": [
+          "action roguelike",
+          "hack and slash",
+          "rpg",
+          "indie"
+        ],
+        "tags": [
+          "Action Roguelike",
+          "Rogue-lite",
+          "Hack and Slash",
+          "Indie",
+          "Mythology",
+          "Action",
+          "Rogue-like",
+          "Singleplayer",
+          "Great Soundtrack",
+          "Story Rich"
+        ],
+        "rating": "ESRB T",
+        "descriptors": [
+          "alcohol reference",
+          "blood",
+          "mild language",
+          "suggestive themes",
+          "violence"
+        ],
+        "hltb": {
+          "main": 23.5,
+          "extras": 48.5,
+          "full": 95
+        },
+        "scores": {
+          "metacritic": 93,
+          "steamPct": 98
+        },
+        "localPlay": "One player only; no co-op.",
+        "steamAppId": 1145360,
+        "asOf": "2026-10-22",
+        "sources": [
+          "https://store.steampowered.com/api/appdetails?appids=1145360",
+          "https://steamspy.com/api.php?request=appdetails&appid=1145360",
+          "https://www.nintendo.com/us/store/products/hades-switch/",
+          "https://en.wikipedia.org/wiki/Hades_(video_game)"
+        ]
+      },
+      "source": "sample"
+    }
+  ]
+}
