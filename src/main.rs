@@ -59,7 +59,7 @@ fn main() {
 
     let port = if server::already_running(port) {
         // one Game Night per data folder: a second start just shows the one that is running
-        open(port, headless, browser);
+        open(port, headless, browser, &app.paths.data);
         return;
     } else {
         match server::start(app.clone(), port) {
@@ -74,7 +74,7 @@ fn main() {
         }
     };
     eprintln!("Game Night {} on http://127.0.0.1:{port}/ (data: {})", config::VERSION, app.paths.data.display());
-    open(port, headless, browser);
+    open(port, headless, browser, &app.paths.data);
     if headless || browser {
         loop {
             std::thread::park();
@@ -82,14 +82,15 @@ fn main() {
     }
 }
 
-fn open(port: u16, headless: bool, browser: bool) {
+/// Show the page: in its own window (the web view keeps its cache in the data folder), else the browser.
+fn open(port: u16, headless: bool, browser: bool, data: &std::path::Path) {
     let url = format!("http://127.0.0.1:{port}/");
     if headless {
         return;
     }
     #[cfg(feature = "window")]
     if !browser {
-        if let Err(e) = window::run(&url) {
+        if let Err(e) = window::run(&url, &data.join("webview")) {
             eprintln!("No window ({e}); opening the browser instead.");
             let _ = launch::open_url(&url);
             loop {
@@ -98,6 +99,6 @@ fn open(port: u16, headless: bool, browser: bool) {
         }
         std::process::exit(0);
     }
-    let _ = browser;
+    let _ = (browser, data);
     let _ = launch::open_url(&url);
 }

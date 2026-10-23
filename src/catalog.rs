@@ -566,6 +566,17 @@ impl Catalog {
         })
     }
 
+    /// Replace how a game starts (its files moved). Validated like any edit; returns whether anything changed.
+    pub fn set_launch(&self, title: &str, launch: &Value) -> Result<bool, String> {
+        self.edit(false, |d| {
+            let games = d["games"].as_array_mut().ok_or("games must be a list")?;
+            let g = games.iter_mut().find(|x| s(x, "t") == title).ok_or(format!("{title} isn't in the catalog"))?;
+            let changed = g.get("launch") != Some(launch);
+            g["launch"] = launch.clone();
+            Ok(changed)
+        })
+    }
+
     pub fn remove(&self, title: &str) -> Result<bool, String> {
         self.edit(false, |d| {
             let games = d["games"].as_array_mut().ok_or("games must be a list")?;

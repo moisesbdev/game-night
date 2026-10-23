@@ -250,7 +250,8 @@ pub struct App {
 
 /// Steam runtimes, Proton, redistributables and tools: never games.
 fn is_tool(appid: u64, name: &str) -> bool {
-    const IDS: [u64; 8] = [228980, 1070560, 1391110, 1628350, 1493710, 250820, 1826330, 2180100];
+    // runtimes and redistributables, SteamVR, and apps that aren't games (Wallpaper Engine, Lossless Scaling, Soundpad, Blender)
+    const IDS: [u64; 12] = [228980, 1070560, 1391110, 1628350, 1493710, 250820, 1826330, 2180100, 431960, 993090, 629520, 365670];
     const WORDS: [&str; 8] = ["proton", "steam linux runtime", "steamworks common", "steamvr", "redistributable", "dedicated server", "soundtrack", "sdk"];
     let low = name.to_lowercase();
     IDS.contains(&appid) || WORDS.iter().any(|w| low.contains(w))

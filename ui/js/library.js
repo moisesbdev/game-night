@@ -68,12 +68,12 @@ export async function librarySection() {
   const allChip = (box, label) => { const c = chip(label || "Select all", false, () => { const on = c.getAttribute("aria-pressed") !== "true"; c.setAttribute("aria-pressed", String(on)); tick(box, on); }); return c; };
   const item = x => h("li", {}, h("label", {},
     h("input", { type: "checkbox", onchange: e => { const k = x.source + "|" + x.key; if (e.target.checked) picked.add(k); else picked.delete(k); count(); } }),
-    " " + x.title, x.canStart ? null : h("span", { class: "small" }, "  start it yourself")));
+    " " + x.title));
   const section = src => {
     const fresh = src.games.filter(x => !x.inCatalog), have = src.games.length - fresh.length;
     const head = h("summary", {}, h("b", {}, src.label), h("span", { class: "small" }, "  " + fresh.length + " new" + (have ? " · " + have + " already on the shelf" : "")));
     const box = h("details", { class: "panel libsource", open: fresh.length > 0 && fresh.length <= 60 }, head,
-      h("p", { class: "small" }, "Found at " + src.foundAt.join(" · ") + "." + (src.note ? " " + src.note : "")));
+      src.note ? h("p", { class: "small" }, src.note) : null);
     if (!fresh.length) { box.append(h("p", { class: "small" }, "Everything here is already on the shelf.")); return box; }
     const platforms = [...new Set(fresh.map(x => x.sys))];
     if (platforms.length > 1) {
@@ -109,7 +109,7 @@ export async function librarySection() {
   const summary = foundSummary(d.sources);
   return h("div", {},
     h("p", { class: "lede" }, summary ? "Found on this computer: " + summary + "." : "Nothing new found on this computer's launchers and folders."),
-    h("p", { class: "small" }, "New games arrive as drafts: they're drawn straight away, and marked \"to check\" until someone looks over how they're played together. Games from ES-DE keep their descriptions and box art."),
+    h("p", { class: "small" }, "Tick what you'd play together. New games can be drawn straight away and are marked \"to check\" until someone looks over how they're played."),
     found.map(section),
     h("div", { class: "row" }, S.boot.scrape ? h("button", { class: "btn primary", type: "button", onclick: () => add(true) }, "Add and look them up") : null,
       h("button", { class: "btn" + (S.boot.scrape ? "" : " primary"), type: "button", onclick: () => add(false) }, "Add"), h("button", { class: "link", type: "button", onclick: () => go("more", "settings") }, "Game folders and Steam settings")),

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Moved games are found by themselves.** Launchers' records go stale when a drive letter changes or a library moves (GOG still pointing at E: after E: became H:). Play now looks for the same folders on every drive, in your game folders and in the usual game-folder places (Games, GOG Games, Epic Games...), and for the program by name inside a game folder that turns up. Health lists games found in a new place with one button to save it; the GOG detector does the same and leaves out entries that aren't installed anywhere.
+- **Less on screen.** Settings leads with who's playing and game folders; the Steam folder, art folders and lookup keys fold away. One line explains which launchers are found by themselves. The web view's cache lives in the data folder, not beside the program.
 - **Windows: one file.** The release `gamenight.exe` carries the WebView2 loader and the C runtime inside it (nothing to install, no DLLs beside it), with its own icon, version details and a high-DPI manifest. The release build checks this and fails if the exe ever needs a file Windows doesn't ship. The window and taskbar use the same icon.
 - **Linux: a .deb** that installs a menu entry and icon and pulls in WebKitGTK; the plain and server-only builds stay as tarballs.
 - **Library detectors, shown together on first run.** An empty shelf now greets you with what's on this computer ("Found: Steam 27 · ES-DE 62 · GOG 8 · Epic 1") and one button to bring it in. Each detector finds its launcher by itself and reads its own records:

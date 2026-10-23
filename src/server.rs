@@ -182,6 +182,7 @@ fn post(app: &App, path: &str, d: &Value) -> Result<Json, (u16, String)> {
         "/api/settings" => app.save_settings(d),
         "/api/import" => app.import(d),
         "/api/sample" => app.add_sample(),
+        "/api/repair-moved" => app.repair_moved(),
         "/api/pick-folder" => app.pick_folder(s(d, "title"), s(d, "start")),
         "/api/library/import" => app.import_library(d.get("picks").unwrap_or(&json!([]))),
         "/api/scrape" => app.scrape(t, s(d, "provider"), d.get("forceArt").and_then(Value::as_bool).unwrap_or(false)),

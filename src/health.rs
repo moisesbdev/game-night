@@ -89,6 +89,23 @@ pub fn run(app: &App) -> Json {
             "Reconnect the drive, or Edit the game to point at where it is now.",
         )
     });
+    let moved = app.moved();
+    if !moved.is_empty() {
+        let names: Vec<&str> = moved.iter().map(|(t, _)| t.as_str()).collect();
+        let mut c = check(
+            "moved",
+            "Games that moved",
+            "info",
+            format!(
+                "{} game(s) were found in a new place (a drive letter changed, or the folder moved): {}. Play already uses the new place.",
+                moved.len(),
+                names.iter().take(5).cloned().collect::<Vec<_>>().join(", ")
+            ),
+            "Save the new places so they don't need finding each time.",
+        );
+        c["action"] = json!({"label": "Save the new places", "api": "/api/repair-moved"});
+        out.push(c);
+    }
     if !st.launch_enabled {
         out.push(check("launch-off", "Play buttons", "info", "Starting games is switched off in Settings.", ""));
     }

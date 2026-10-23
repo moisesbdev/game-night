@@ -522,3 +522,4 @@ body.halloween{
 .libsource summary{cursor:pointer;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
 .libgroup{margin-top:.8rem}
 .hero.welcome .row{margin:.4rem 0 .8rem}
+details.more{margin-top:.8rem}details.more>summary{cursor:pointer;color:var(--mute);font-weight:700}

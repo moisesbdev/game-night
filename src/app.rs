@@ -121,7 +121,8 @@ impl App {
     pub fn availability(&self) -> HashMap<String, launch::Plan> {
         let mut a = self.avail.lock().unwrap();
         if a.0.is_none_or(|t| t.elapsed() > Duration::from_secs(8)) {
-            a.1 = self.catalog.games().iter().map(|g| (s(g, "t").to_string(), launch::plan(g))).collect();
+            let bases = launch::search_bases(&self.settings().game_dirs);
+            a.1 = self.catalog.games().iter().map(|g| (s(g, "t").to_string(), launch::plan_with(g, &bases))).collect();
             a.0 = Some(Instant::now());
         }
         a.1.clone()
@@ -328,7 +329,7 @@ impl App {
 
     pub fn launch(&self, t: &str, dry: bool) -> R {
         let g = self.need_game(t)?;
-        let p = launch::plan(&g);
+        let p = launch::plan_with(&g, &launch::search_bases(&self.settings().game_dirs));
         if dry || !self.settings().launch_enabled {
             let msg = if !p.ok {
                 p.reason.clone()
@@ -595,7 +596,7 @@ impl App {
             ..Default::default()
         };
         let mut all = vec![steam];
-        all.extend(crate::detect::all());
+        all.extend(crate::detect::all(&st.game_dirs));
         all.push(folders);
         *c = Some((Instant::now(), all.clone()));
         all
@@ -660,6 +661,26 @@ impl App {
         }
         self.refresh();
         Ok(json!({"added": n, "refused": refused}))
+    }
+
+    /// Games whose files were found somewhere new (a drive letter changed, a library moved): [(title, new launch)].
+    pub fn moved(&self) -> Vec<(String, Value)> {
+        let mut v: Vec<(String, Value)> = self.availability().into_iter().filter_map(|(t, p)| p.moved.map(|m| (t, m))).collect();
+        v.sort_by(|a, b| a.0.cmp(&b.0));
+        v
+    }
+
+    /// Save the new places of moved games in their entries, so they no longer need finding.
+    pub fn repair_moved(&self) -> R {
+        let moved = self.moved();
+        let mut fixed = vec![];
+        for (t, launch) in &moved {
+            if self.catalog.set_launch(t, launch)? {
+                fixed.push(t.clone());
+            }
+        }
+        self.refresh();
+        Ok(json!({"fixed": fixed}))
     }
 
     pub fn add_sample(&self) -> R {

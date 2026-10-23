@@ -155,7 +155,7 @@ pub fn join_rel(base: &Path, rel: &str) -> PathBuf {
 }
 
 /// Folders where launchers and people usually keep games, relative to a drive (Windows) or the home folder (Linux, macOS).
-const LIKELY: [&str; 14] = [
+pub const LIKELY: [&str; 14] = [
     "Games",
     "Epic Games",
     "Program Files/Epic Games",

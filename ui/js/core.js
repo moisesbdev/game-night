@@ -111,7 +111,7 @@ export function seg(label, options, current, onPick) {
 export async function api(path, body) {
   const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json", "X-GameNight-Token": TOKEN }, body: JSON.stringify(body) };
   let r;
-  try { r = await fetch(path, opt); } catch (e) { showOffline(true); throw new Error("Game Night isn't running. Start it again from the Desktop shortcut."); }
+  try { r = await fetch(path, opt); } catch (e) { showOffline(true); throw new Error("Game Night isn't running. Start it again."); }
   showOffline(false);
   let d; try { d = await r.json(); } catch (e) { d = { error: "unreadable response" }; }
   if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
@@ -122,7 +122,7 @@ export function showOffline(on) {
   let b = document.getElementById("offline");
   if (!on) { if (b) b.remove(); return; }
   if (b) return;
-  b = h("div", { id: "offline", class: "errlist", role: "alert", style: "position:sticky;top:60px;z-index:4" }, "Game Night stopped answering. Start it again from the Desktop shortcut, then ",
+  b = h("div", { id: "offline", class: "errlist", role: "alert", style: "position:sticky;top:60px;z-index:4" }, "Game Night stopped answering (its window may have been closed). Start it again, then ",
     h("button", { class: "btn", type: "button", onclick: () => location.reload() }, "reload this page"), ".");
   document.getElementById("view").before(b);
 }

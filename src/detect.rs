@@ -513,8 +513,31 @@ fn same(a: &Path, b: &Path) -> bool {
     }
 }
 
+/// Point each candidate that starts a program at where that program is now (launchers' records can be out of date after a drive
+/// letter changes), and leave out the ones whose program isn't anywhere: (still installed, names of the ones that aren't).
+pub fn settle(found: Vec<Candidate>, bases: &[PathBuf]) -> (Vec<Candidate>, Vec<String>) {
+    let mut keep = vec![];
+    let mut gone = vec![];
+    for mut c in found {
+        let Some(l) = c.launch.clone().filter(|l| l.get("command").is_some()) else {
+            keep.push(c);
+            continue;
+        };
+        let p = crate::launch::plan_with(&json!({"launch": l}), bases);
+        if !p.ok {
+            gone.push(c.title.clone());
+            continue;
+        }
+        if let Some(m) = p.moved {
+            c.launch = Some(m);
+        }
+        keep.push(c);
+    }
+    (keep, gone)
+}
+
 /// Every library on this computer, each with what it found. Steam and game folders are read by their own modules and added by the app.
-pub fn all() -> Vec<Source> {
+pub fn all(game_dirs: &[String]) -> Vec<Source> {
     let mut out = vec![];
     let homes = esde_homes();
     let mut esde = Source { id: "esde", label: "ES-DE", ..Default::default() };
@@ -534,12 +557,17 @@ pub fn all() -> Vec<Source> {
     }
     out.push(epic);
     let reg = gog_registry();
-    let gog = gog_from_reg(&reg);
+    let (gog, gone) = settle(gog_from_reg(&reg), &crate::launch::search_bases(game_dirs));
     out.push(Source {
         id: "gog",
         label: "GOG Galaxy",
         found_at: if reg.trim().is_empty() { vec![] } else { vec![PathBuf::from(r"HKLM\SOFTWARE\WOW6432Node\GOG.com\Games")] },
         games: gog,
+        note: if gone.is_empty() {
+            String::new()
+        } else {
+            format!("GOG Galaxy still lists {} that aren't installed anywhere: {}.", gone.len(), gone.join(", "))
+        },
         ..Default::default()
     });
     let mut ra = Source { id: "retroarch", label: "RetroArch", ..Default::default() };

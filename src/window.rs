@@ -39,7 +39,8 @@ fn app_icon() -> Option<Icon> {
     icon()
 }
 
-pub fn run(url: &str) -> Result<(), String> {
+/// `cache` holds the web view's own files (WebView2 or WebKit data), so nothing is written beside the program.
+pub fn run(url: &str, cache: &std::path::Path) -> Result<(), String> {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Game Night")
@@ -50,7 +51,8 @@ pub fn run(url: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let origin = url.trim_end_matches('/').to_string();
     let home = origin.clone();
-    let builder = wry::WebViewBuilder::new()
+    let mut context = wry::WebContext::new(Some(cache.to_path_buf()));
+    let builder = wry::WebViewBuilder::new_with_web_context(&mut context)
         .with_url(url)
         .with_background_color((13, 31, 35, 255))
         .with_devtools(cfg!(debug_assertions))
