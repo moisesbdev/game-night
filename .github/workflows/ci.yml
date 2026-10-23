@@ -1,7 +1,6 @@
 name: CI
 
-# Pushes and pull requests test on Linux only: on a private repo GitHub counts Windows minutes x2 and macOS x10.
-# "Run workflow" (manual) tests all three systems; the release workflow builds all three for every tag.
+# Every push and pull request is tested on Windows, Linux and macOS, and the Windows release exe is built and checked to be one file.
 on:
   push:
     branches: [main]
@@ -18,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["ubuntu-24.04","windows-latest","macos-latest"]' || '["ubuntu-24.04"]') }}
+        os: [ubuntu-24.04, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -26,7 +25,8 @@ jobs:
           components: clippy, rustfmt
       - name: Linux window libraries
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev
+        shell: bash
+        run: ./packaging/linux/install-build-deps.sh
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
@@ -41,15 +41,15 @@ jobs:
       - run: node --test "tests/js/*.test.mjs"
 
   windows-exe:
-    # On demand ("Run workflow"): the real Windows release exe, checked to be one file, kept as a download for testing.
+    # The real Windows release exe, checked to be one file, kept as a download for testing.
     name: Windows exe
-    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools
+      - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
       - shell: pwsh
         run: ./packaging/windows/check-exe.ps1 target/release/gamenight.exe
