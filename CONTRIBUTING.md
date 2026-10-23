@@ -13,7 +13,7 @@ Thanks for helping. A few things keep Game Night what it is:
 
 ```bash
 cargo test                 # Rust, including the odds statistics and a real server
-node --test tests/js       # the page's DOM-free logic
+node --test "tests/js/*.test.mjs"  # the page's DOM-free logic
 cargo clippy --all-targets # no warnings, please
 cargo fmt
 GAMENIGHT_UI_DIR=ui cargo run -- --browser   # serve the page from disk while editing it

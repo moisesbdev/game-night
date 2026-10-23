@@ -1,4 +1,4 @@
-// Tests for the pure UI logic (no DOM). Run with: node --test tests/js
+// Tests for the pure UI logic (no DOM). Run with: node --test "tests/js/*.test.mjs"
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BUILTIN_PRESETS, COLORS, DEFAULT_FILTERS, MOODS, QUICK_PICKS, SUBS, TABS, ago, cleanFilters, coopSearchUrl, daysSince, describeFilters, fmtMinutes, fmtSeconds, isVideoId, legacyRoute, mediaUrl, monogram, nightKey, nightLabel, aboutLines, applyKey, paceLine, playersLabel, padStep, posterColor, sourceNames, watchFirst, ratingWords, trailerEmbedUrl, trailerSearchUrl, watchUrl, season, quickOrder, quickLabel, resolveFilters } from "../../ui/js/logic.js";

@@ -81,7 +81,7 @@ cargo build --release
 - **No window, no system libraries**: `cargo build --release --no-default-features --features scrape` builds the server-only program.
 - **No network code at all**: `cargo build --release --no-default-features` leaves out the scrapers too.
 
-Tests: `cargo test` (Rust, including the statistics) and `node --test tests/js` (the page's logic). While working on the page, set `GAMENIGHT_UI_DIR=ui` to serve it from disk instead of the copy built into the program.
+Tests: `cargo test` (Rust, including the statistics) and `node --test "tests/js/*.test.mjs"` (the page's logic). While working on the page, set `GAMENIGHT_UI_DIR=ui` to serve it from disk instead of the copy built into the program.
 
 ## Licence
 
