@@ -47,7 +47,8 @@ export function buildFilters() {
     row("Players", chip("Any", F.n === "any", set("n", "any")), Array.from({ length: Math.max(4, pids().length) }, (_, i) => i + 1).map(n => chip(n === 1 ? "1 player" : n === 2 ? "2 players" : "Room for " + n, F.n === n, set("n", n)))),
     (S.boot.platforms || []).length > 1 ? row("Platform", chip("Any", !F.platform, set("platform", "")), S.boot.platforms.map(p => chip(p, F.platform === p, set("platform", p)))) : null,
     row("Skill gap", chip("Any", F.gap === 1, set("gap", 1)), chip("3+ dots", F.gap === 3, set("gap", 3)), chip("4+ dots", F.gap === 4, set("gap", 4)), chip("5 dots (skill barely matters)", F.gap === 5, set("gap", 5))),
-    row("Show", chip("Hide ones played or marked not for us", F.hide, set("hide", !F.hide)), chip("Only games new to us", F.fresh, set("fresh", !F.fresh)), chip("One controller (one plays, the others watch)", F.one, set("one", !F.one))));
+    row("Show", chip("Hide ones played or marked not for us", F.hide, set("hide", !F.hide)), chip("Only games new to us", F.fresh, set("fresh", !F.fresh)), chip("One controller (one plays, the others watch)", F.one, set("one", !F.one)),
+      S.boot.steamShared ? chip("Games we all own on Steam", F.owned, set("owned", !F.owned)) : null));
 }
 
 export function openFilters() {

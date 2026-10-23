@@ -45,7 +45,7 @@ export function ago(d) { return d === 0 ? "today" : d === 1 ? "yesterday" : d + 
 
 export function daysSince(last) { if (!last) return null; const m = last.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (!m) return null; const n = new Date(); return Math.max(0, Math.round((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(+m[1], +m[2] - 1, +m[3])) / 864e5)); }
 
-export const DEFAULT_FILTERS = { where: "any", len: "any", gap: 1, n: "any", hide: false, match: "all", two: false, fresh: false, one: false, platform: "", A: [], B: [] };
+export const DEFAULT_FILTERS = { where: "any", len: "any", gap: 1, n: "any", hide: false, match: "all", two: false, fresh: false, one: false, platform: "", owned: false, A: [], B: [] };
 
 export const BUILTIN_PRESETS = [{ name: "Quick round", f: { len: "quick" } }, { name: "One couch, two players", f: { where: "couch", n: 2 } }, { name: "Spooky night", f: { A: ["spooky"] } }];
 
@@ -58,7 +58,7 @@ export function cleanFilters(f) {
   if (Number.isInteger(f.n) && f.n >= 1 && f.n <= 8) out.n = f.n;
   if (["all", "any"].includes(f.match)) out.match = f.match;
   if (typeof f.platform === "string") out.platform = f.platform.slice(0, 24);
-  for (const k of ["hide", "two", "fresh", "one"]) if (typeof f[k] === "boolean") out[k] = f[k];
+  for (const k of ["hide", "two", "fresh", "one", "owned"]) if (typeof f[k] === "boolean") out[k] = f[k];
   for (const k of ["A", "B"]) if (Array.isArray(f[k])) out[k] = f[k].filter(m => moods.includes(m));
   return out;
 }
@@ -137,6 +137,7 @@ export function describeFilters(f) {
   if (F.fresh) out.push("new to us");
   if (F.one) out.push("one controller");
   if (F.platform) out.push("on " + F.platform);
+  if (F.owned) out.push("games you all own");
   return out;
 }
 /** The seasonal look for a date: "halloween" all through October, otherwise null. */

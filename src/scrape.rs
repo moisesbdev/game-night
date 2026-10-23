@@ -193,7 +193,7 @@ pub fn from_steam_details(id: u64, d: &Value) -> Found {
 }
 
 #[cfg(feature = "scrape")]
-mod net {
+pub(crate) mod net {
     use super::*;
     use std::io::Read;
     use std::time::Duration;

@@ -15,6 +15,7 @@ mod scrape;
 mod server;
 mod sessions;
 mod steam;
+mod steamweb;
 mod store;
 mod util;
 #[cfg(feature = "window")]

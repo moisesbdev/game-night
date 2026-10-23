@@ -15,6 +15,9 @@ pub const MAX_PLAYERS: usize = 8;
 pub struct Player {
     pub id: String,
     pub name: String,
+    /// Their Steam profile (a link, SteamID64 or custom name), to see which games everyone owns. Optional.
+    #[serde(default)]
+    pub steam: String,
 }
 
 /// A folder of box art, screenshots and preview videos. `slug`: `<dir>/covers/<slug>.png` and so on.
@@ -46,6 +49,8 @@ pub struct Settings {
     pub steam_dir: String,
     /// Optional key for SteamGridDB artwork (https://www.steamgriddb.com/profile/preferences/api).
     pub steamgriddb_key: String,
+    /// Steam Web API key (steamcommunity.com/dev/apikey), for reading the players' Steam libraries.
+    pub steam_api_key: String,
     /// TheGamesDB API key (requested on forums.thegamesdb.net).
     pub thegamesdb_key: String,
     /// ScreenScraper software credentials (requested on screenscraper.fr's forum) and, optionally, your own account.
@@ -58,7 +63,10 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Settings {
-            players: vec![Player { id: "p1".into(), name: "Player 1".into() }, Player { id: "p2".into(), name: "Player 2".into() }],
+            players: vec![
+                Player { id: "p1".into(), name: "Player 1".into(), steam: String::new() },
+                Player { id: "p2".into(), name: "Player 2".into(), steam: String::new() },
+            ],
             not_for_us: "leave-out".into(),
             launch_enabled: true,
             ask_after_game: true,
@@ -68,6 +76,7 @@ impl Default for Settings {
             game_dirs: vec![],
             steam_dir: String::new(),
             steamgriddb_key: String::new(),
+            steam_api_key: String::new(),
             thegamesdb_key: String::new(),
             screenscraper_dev_id: String::new(),
             screenscraper_dev_password: String::new(),
@@ -93,6 +102,7 @@ impl Settings {
         self.players.truncate(MAX_PLAYERS);
         for (n, p) in self.players.iter_mut().enumerate() {
             p.name = p.name.trim().chars().take(24).collect();
+            p.steam = p.steam.trim().chars().take(200).collect();
             if p.name.is_empty() {
                 p.name = format!("Player {}", n + 1);
             }
@@ -109,6 +119,7 @@ impl Settings {
         self.game_dirs = self.game_dirs.iter().map(|d| d.trim().to_string()).filter(|d| !d.is_empty() && d.len() <= 400).take(20).collect();
         self.media_dirs.retain(|m| !m.path.trim().is_empty() && matches!(m.layout.as_str(), "slug" | "esde"));
         self.steamgriddb_key = self.steamgriddb_key.trim().chars().filter(|c| c.is_ascii_alphanumeric()).take(64).collect();
+        self.steam_api_key = self.steam_api_key.trim().chars().filter(|c| c.is_ascii_alphanumeric()).take(64).collect();
         self.thegamesdb_key = self.thegamesdb_key.trim().chars().filter(|c| c.is_ascii_alphanumeric()).take(128).collect();
         for v in [&mut self.screenscraper_dev_id, &mut self.screenscraper_dev_password, &mut self.screenscraper_user, &mut self.screenscraper_password] {
             *v = v.trim().chars().filter(|c| !c.is_control()).take(100).collect();
@@ -205,10 +216,10 @@ mod tests {
     fn clean_repairs_hand_edits() {
         let s = Settings {
             players: vec![
-                Player { id: "p1".into(), name: "  ".into() },
-                Player { id: "p1".into(), name: "dup".into() },
-                Player { id: "bad id!".into(), name: "x".into() },
-                Player { id: "p2".into(), name: "A very long name that goes on and on".into() },
+                Player { id: "p1".into(), name: "  ".into(), steam: String::new() },
+                Player { id: "p1".into(), name: "dup".into(), steam: String::new() },
+                Player { id: "bad id!".into(), name: "x".into(), steam: String::new() },
+                Player { id: "p2".into(), name: "A very long name that goes on and on".into(), steam: String::new() },
             ],
             not_for_us: "nonsense".into(),
             port: 80,

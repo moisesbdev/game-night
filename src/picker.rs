@@ -68,6 +68,8 @@ pub struct Context {
     /// One person's "not for us" makes a game rarer instead of leaving it out.
     pub meh_soft: bool,
     pub solo_rare: bool,
+    /// Titles everyone in the group owns on Steam, when two or more Steam libraries are linked.
+    pub all_own: Option<HashSet<String>>,
 }
 
 impl Context {
@@ -84,6 +86,7 @@ impl Context {
             today,
             meh_soft: false,
             solo_rare: false,
+            all_own: None,
         }
     }
 
@@ -125,6 +128,8 @@ pub struct Filters {
     pub fresh: bool,
     pub one: bool,
     pub platform: String,
+    /// Only games everyone owns on Steam (ignored until two Steam libraries are linked).
+    pub owned: bool,
 }
 
 impl Filters {
@@ -147,6 +152,7 @@ impl Filters {
             fresh: b(raw, "fresh"),
             one: b(raw, "one"),
             platform: s(raw, "platform").chars().take(24).collect(),
+            owned: b(raw, "owned"),
         }
     }
 
@@ -199,6 +205,12 @@ fn base_ok(g: &Json, f: &Filters, ctx: &Context) -> bool {
         return false;
     }
     if !f.platform.is_empty() && !s(g, "sys").eq_ignore_ascii_case(&f.platform) {
+        return false;
+    }
+    if f.owned
+        && let Some(all) = &ctx.all_own
+        && !all.contains(t)
+    {
         return false;
     }
     true

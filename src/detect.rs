@@ -603,7 +603,7 @@ pub fn draft(c: &Candidate, placeholder_why: &str) -> Json {
     if let Some(m) = &c.media {
         g["media"] = m.clone();
     }
-    for (k, v) in &c.extra {
+    for (k, v) in c.extra.iter().filter(|(k, _)| !k.starts_with('_')) {
         g[k] = v.clone();
     }
     if g["one"] == json!(true) {

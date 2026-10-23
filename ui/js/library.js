@@ -75,11 +75,11 @@ export async function librarySection() {
     const box = h("details", { class: "panel libsource", open: fresh.length > 0 && fresh.length <= 60 }, head,
       src.note ? h("p", { class: "small" }, src.note) : null);
     if (!fresh.length) { box.append(h("p", { class: "small" }, "Everything here is already on the shelf.")); return box; }
-    const platforms = [...new Set(fresh.map(x => x.sys))];
+    const groupOf = x => x.group || x.sys, platforms = [...new Set(fresh.map(groupOf))];
     if (platforms.length > 1) {
       box.append(h("div", { class: "row" }, allChip(box, "Select all " + fresh.length)));
       for (const p of platforms) {
-        const games = fresh.filter(x => x.sys === p), group = h("div", { class: "libgroup" });
+        const games = fresh.filter(x => groupOf(x) === p), group = h("div", { class: "libgroup" });
         group.append(h("div", { class: "row" }, h("b", { class: "small" }, p + " (" + games.length + ")"), allChip(group, "Select these")), h("ul", { class: "libpick" }, games.map(item)));
         box.append(group);
       }

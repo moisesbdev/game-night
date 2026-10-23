@@ -6,6 +6,7 @@ You've got a few hundred games between you and an evening together, and twenty m
 
 - **Made for the people on the couch.** Set up the group once: a couple, a few friends, a housemate who drops by, up to eight. Everyone's marks count, the pick goes round the room, and anyone can say "not for us".
 - **Your Steam library, in one tap.** Game Night finds Steam on its own: the registry and the usual places, plus a look at every drive for Steam libraries (Windows, Linux native/Flatpak/Snap and macOS). It lists what's installed and adds what you pick, and Play starts the game through Steam.
+- **Playing online with friends? See what you all own.** Link each person's Steam profile (Settings > Who's playing) and Game Night shows the games everyone owns, the ones that play online together first, and a "Games we all own" filter keeps the pick to those. It uses Steam's official Web API with one free key; each profile's game details need to be public.
 - **Everything else it can find, too.** On first run Game Night shows what it found on your computer: ES-DE (your emulated games, with their descriptions and box art), Epic Games, GOG Galaxy, RetroArch playlists, and Heroic and Lutris on Linux. Tick what to bring in.
 - **Your other games, without typing paths.** Settings suggests the folders on your drives that hold games (Epic, GOG, Xbox app, EA, Ubisoft, Riot, your Desktop's shortcuts, `~/Games`, Heroic), each with how many it found, one tap to add, or **Browse...** with your system's own folder picker. Console games can sit on the shelf too: they're drawn, you just press start yourself.
 - **Box art and details from four sources.** **Look it up** tries the Steam store (no account needed), TheGamesDB and ScreenScraper (consoles and retro games) and SteamGridDB (more art), in that order, filling only what's missing.
@@ -78,6 +79,7 @@ Everything lives in one folder: `%APPDATA%\GameNight` on Windows, `~/.local/shar
 | TheGamesDB | a free API key (request on forums.thegamesdb.net) | consoles and older games |
 | ScreenScraper | software credentials (request on the screenscraper.fr forum) and, optionally, your account for a bigger daily quota | the widest console and retro coverage |
 | SteamGridDB | a free API key (steamgriddb.com, Preferences > API) | extra box art |
+| Steam Web API (for "what we all own") | a free key (steamcommunity.com/dev/apikey); each linked profile's game details public | everyone's owned Steam games |
 
 Keys are entered in Settings and stay in your data folder. A source that isn't set up is simply skipped.
 

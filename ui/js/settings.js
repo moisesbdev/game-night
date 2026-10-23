@@ -57,6 +57,29 @@ function gameFoldersPanel(list) {
   return box;
 }
 
+/** Steam accounts, folded away: a profile per player and the Web API key, then Refresh reads everyone's library. */
+function steamAccountsPanel(draft, keyInput, save) {
+  const rows = h("div", {}), report = h("div", { class: "small", role: "status", "aria-live": "polite" });
+  const paint = () => rows.replaceChildren(...draft.map(p => h("div", { class: "row" },
+    h("label", { for: "st-" + p.id, style: "min-width:7em" }, p.name || "Player"),
+    h("input", { type: "text", id: "st-" + p.id, value: p.steam || "", placeholder: "Steam profile link or ID", oninput: e => { p.steam = e.target.value; } }))));
+  paint();
+  const refresh = async () => {
+    report.textContent = "Saving, then reading everyone's Steam library...";
+    if (!(await save(true))) { report.textContent = ""; return; }
+    try {
+      const r = await api("/api/steam/refresh", {});
+      report.replaceChildren(...r.players.map(p => h("div", {}, p.name + ": " + (p.error ? p.error : p.games + " games"))),
+        h("div", {}, r.shared == null ? "Link at least two libraries to see what you all own." : "You all own " + r.shared + " game" + (r.shared === 1 ? "" : "s") + (r.online ? ", " + r.online + " of them online together" : "") + ". They're in Shelf > Add from library."));
+      await reload();
+    } catch (e) { report.textContent = e.message; }
+  };
+  return h("details", { class: "more" }, h("summary", {}, "Steam accounts: see what you all own"),
+    h("p", { class: "small" }, "For playing online together. Each profile's game details must be public in Steam's privacy settings. The key is free from steamcommunity.com/dev/apikey and stays on this computer."),
+    rows, h("div", {}, h("label", { class: "f", for: "steamkey" }, "Steam Web API key"), keyInput),
+    h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: refresh }, "Refresh Steam libraries")), report);
+}
+
 /** Folders where art lives: a path and a layout per row. */
 function mediaPanel(draft) {
   const box = h("div", {});
@@ -80,7 +103,7 @@ export async function settingsSection() {
   const steamDir = h("input", { type: "text", id: "steamdir", value: st.steamDir || "", placeholder: st.steamFound ? "Found: " + st.steamFound : "Not found; set its folder here" });
   const secret = (id, v) => h("input", { type: "password", id, value: v === "set" ? "set" : "", autocomplete: "off", placeholder: "Not set" });
   const plain = (id, v) => h("input", { type: "text", id, value: v || "", autocomplete: "off", placeholder: "Not set" });
-  const gridKey = secret("gridkey", st.steamgriddbKey), tgdbKey = secret("tgdbkey", st.thegamesdbKey);
+  const gridKey = secret("gridkey", st.steamgriddbKey), tgdbKey = secret("tgdbkey", st.thegamesdbKey), steamKey = secret("steamkey", st.steamApiKey);
   const ssDev = plain("ssdev", st.screenscraperDevId), ssDevPw = secret("ssdevpw", st.screenscraperDevPassword), ssUser = plain("ssuser", st.screenscraperUser), ssPw = secret("sspw", st.screenscraperPassword);
   const field = (id, label, input) => h("div", {}, h("label", { class: "f", for: id }, label), input);
   const seasonBox = h("input", { type: "checkbox", id: "season", checked: seasonOn(), onchange: e => setSeasonOn(e.target.checked) });
@@ -91,20 +114,22 @@ export async function settingsSection() {
     rd.onload = async () => { try { const r = await api("/api/import", JSON.parse(rd.result)); await reload(); toast("Imported " + r.imported + " marks and " + r.gamesAdded + " games."); render(); } catch (e) { toast("That file isn't an export: " + e.message); } };
     rd.readAsText(f); ev.target.value = "";
   } });
-  const save = async () => {
+  const save = async quiet => {
     try {
       const r = await api("/api/settings", {
-        players: draft.players.map(p => ({ id: p.id, name: p.name.trim() })), notForUs: meh.value, launchEnabled: lc.checked, askAfterGame: askBox.checked, trailersEnabled: trailerBox.checked,
+        players: draft.players.map(p => ({ id: p.id, name: p.name.trim(), steam: (p.steam || "").trim() })), steamApiKey: steamKey.value.trim(), notForUs: meh.value, launchEnabled: lc.checked, askAfterGame: askBox.checked, trailersEnabled: trailerBox.checked,
         gameDirs: draft.dirs, steamDir: steamDir.value.trim(), mediaDirs: draft.media.filter(m => m.path.trim()), steamgriddbKey: gridKey.value.trim(), thegamesdbKey: tgdbKey.value.trim(),
         screenscraperDevId: ssDev.value.trim(), screenscraperDevPassword: ssDevPw.value.trim(), screenscraperUser: ssUser.value.trim(), screenscraperPassword: ssPw.value.trim(),
       });
-      await reload(); buildTurn(); toast("Saved."); render();
+      await reload(); buildTurn();
+      if (quiet) return r;
+      toast("Saved."); render();
       return r;
     } catch (e) { toast(e.message); }
   };
   return h("div", {},
     h("div", { class: "panel" }, h("b", {}, "Who's playing"), h("p", { class: "small" }, "Up to eight. The pick goes round in this order."), playersPanel(draft.players),
-      h("label", { class: "f", for: "meh" }, "When someone marks a game \"not for us\""), meh),
+      h("label", { class: "f", for: "meh" }, "When someone marks a game \"not for us\""), meh, steamAccountsPanel(draft.players, steamKey, save)),
     h("div", { class: "panel" }, h("b", {}, "Where your games are"),
       h("p", { class: "small" }, "Steam, ES-DE, Epic, GOG, RetroArch, Heroic and Lutris are found by themselves. Add a folder only for games that live somewhere else."), gameFoldersPanel(draft.dirs),
       h("details", { class: "more" }, h("summary", {}, "Steam folder and art folders"),
@@ -119,7 +144,7 @@ export async function settingsSection() {
       field("gridkey", "SteamGridDB API key (more box art; steamgriddb.com, Preferences > API)", gridKey)),
     h("div", { class: "panel" }, h("b", {}, "Playing"), h("label", {}, lc, " Play buttons start games"), h("label", {}, askBox, " Ask how it went after a game"),
       h("label", {}, trailerBox, " Allow trailers from YouTube (only when pressed, always muted)")),
-    h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: save }, "Save settings")),
+    h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: () => save() }, "Save settings")),
     h("div", { class: "panel" }, h("b", {}, "On this screen"),
       h("label", {}, couchBox, " Couch mode: bigger text for the sofa"),
       h("label", {}, seasonBox, " Halloween look in October"),

@@ -25,7 +25,7 @@ type SteamCache = Option<(Instant, String, crate::steam::Discovery)>;
 type SourcesCache = Option<(Instant, Vec<crate::detect::Source>)>;
 
 /// Settings holding secrets: the page only ever sees "set", and sending "set" back keeps the stored value.
-const SECRETS: [&str; 4] = ["steamgriddbKey", "thegamesdbKey", "screenscraperDevPassword", "screenscraperPassword"];
+const SECRETS: [&str; 5] = ["steamgriddbKey", "thegamesdbKey", "screenscraperDevPassword", "screenscraperPassword", "steamApiKey"];
 
 /// Twenty well-known games to try the picker with before bringing in your own (no launch set, no paths).
 pub const SAMPLE: &str = include_str!("../examples/sample-catalog.json");
@@ -155,6 +155,11 @@ impl App {
         let has_launch: HashSet<&str> = games.iter().filter(|g| g.get("launch").is_some()).map(|g| s(g, "t")).collect();
         c.unavailable = self.availability().into_iter().filter(|(t, p)| !p.ok && has_launch.contains(t.as_str())).map(|(t, p)| (t, p.reason)).collect();
         c.meh_soft = st.not_for_us == "rarer";
+        if let Some(ids) = self.shared_steam() {
+            c.all_own = Some(
+                self.catalog.games().iter().filter(|g| launch::steam_id(g).is_some_and(|id| ids.contains_key(&id))).map(|g| s(g, "t").to_string()).collect(),
+            );
+        }
         c
     }
 
@@ -231,6 +236,7 @@ impl App {
             "history": hist[hist.len().saturating_sub(30)..], "vetoes": self.store.vetoes(), "today": today(), "platforms": platforms,
             "settings": self.settings_view(&st), "notices": notices, "warnings": warnings, "problems": self.catalog.problems(), "wheel": wheel,
             "scrape": cfg!(feature = "scrape"),
+            "steamShared": self.shared_steam().is_some(),
         }))
     }
 
@@ -596,6 +602,9 @@ impl App {
             ..Default::default()
         };
         let mut all = vec![steam];
+        if let Some(shared) = self.shared_steam() {
+            all.push(self.shared_source(shared));
+        }
         all.extend(crate::detect::all(&st.game_dirs));
         all.push(folders);
         *c = Some((Instant::now(), all.clone()));
@@ -619,7 +628,7 @@ impl App {
             .iter()
             .map(|src| {
                 json!({"id": src.id, "label": src.label, "foundAt": src.found_at.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>(), "note": src.note,
-                       "games": src.games.iter().map(|c| json!({"source": c.source, "key": c.key, "title": c.title, "sys": c.sys, "inCatalog": on_shelf(c), "canStart": c.launch.is_some()})).collect::<Vec<_>>()})
+                       "games": src.games.iter().map(|c| json!({"source": c.source, "key": c.key, "title": c.title, "sys": c.sys, "group": c.extra.get("_group"), "inCatalog": on_shelf(c), "canStart": c.launch.is_some()})).collect::<Vec<_>>()})
             })
             .collect();
         let disc = self.steam();
@@ -681,6 +690,134 @@ impl App {
         }
         self.refresh();
         Ok(json!({"fixed": fixed}))
+    }
+
+    // ---- Steam accounts: what everyone owns
+
+    fn steam_libraries_path(&self) -> PathBuf {
+        self.paths.data.join("steam-libraries.json")
+    }
+
+    /// `{players: {pid: {profile, steamid, fetched, games: {appid: name}, error}}, modes: {appid: {online, onlineCoop, local}}}`.
+    pub fn steam_libraries(&self) -> Json {
+        crate::util::read_json(&self.steam_libraries_path()).ok().flatten().unwrap_or(json!({"players": {}, "modes": {}}))
+    }
+
+    /// The Steam games every linked player owns, {appid: name}, once two or more players have a library; else None.
+    pub fn shared_steam(&self) -> Option<std::collections::BTreeMap<u64, String>> {
+        let libs = self.steam_libraries();
+        let ids = self.players();
+        let owned: Vec<HashMap<u64, String>> = ids
+            .iter()
+            .filter_map(|p| libs["players"].get(p))
+            .filter(|l| l["games"].as_object().is_some_and(|g| !g.is_empty()))
+            .map(|l| l["games"].as_object().unwrap().iter().filter_map(|(k, v)| Some((k.parse().ok()?, v.as_str().unwrap_or("").to_string()))).collect())
+            .collect();
+        if owned.len() < 2 {
+            return None;
+        }
+        Some(owned[0].iter().filter(|(id, _)| owned[1..].iter().all(|o| o.contains_key(id))).map(|(id, n)| (*id, n.clone())).collect())
+    }
+
+    /// The Library section of games everyone owns, those that play online together first.
+    fn shared_source(&self, shared: std::collections::BTreeMap<u64, String>) -> crate::detect::Source {
+        let modes = self.steam_libraries()["modes"].clone();
+        let mut games: Vec<crate::detect::Candidate> = shared
+            .into_iter()
+            .map(|(id, name)| {
+                let m = &modes[id.to_string()];
+                let online = m["online"] == json!(true);
+                let mut extra = Map::new();
+                extra.insert(
+                    "_group".into(),
+                    json!(if online {
+                        "Plays online together"
+                    } else if m.is_null() {
+                        "Not checked yet"
+                    } else {
+                        "Other games you all own"
+                    }),
+                );
+                if online {
+                    extra.insert("where".into(), json!("online"));
+                    extra.insert("mode".into(), json!(if m["onlineCoop"] == json!(true) { "Co-op" } else { "Versus" }));
+                }
+                crate::detect::Candidate {
+                    source: "shared",
+                    key: id.to_string(),
+                    title: name,
+                    sys: "PC".into(),
+                    launch: Some(json!({"steam": id})),
+                    media: None,
+                    extra,
+                }
+            })
+            .collect();
+        let rank = |c: &crate::detect::Candidate| match c.extra["_group"].as_str() {
+            Some("Plays online together") => 0,
+            Some("Other games you all own") => 1,
+            _ => 2,
+        };
+        games.sort_by(|a, b| rank(a).cmp(&rank(b)).then(a.title.to_lowercase().cmp(&b.title.to_lowercase())));
+        crate::detect::Source { id: "shared", label: "Everyone owns on Steam", found_at: vec![PathBuf::from("Steam")], games, ..Default::default() }
+    }
+
+    /// Read each linked player's Steam library (Steam's Web API), then check which games everyone owns play online together.
+    /// Only when someone presses Refresh. Returns how each player went and how many games everyone owns.
+    pub fn refresh_steam(&self) -> R {
+        let st = self.settings();
+        if st.steam_api_key.is_empty() {
+            return Err("add a Steam Web API key first (steamcommunity.com/dev/apikey)".into());
+        }
+        if !cfg!(feature = "scrape") {
+            return Err("this build was made without online lookups".into());
+        }
+        let mut libs = self.steam_libraries();
+        let mut report = vec![];
+        let mut players = Map::new();
+        for p in st.players.iter().filter(|p| !p.steam.is_empty()) {
+            #[cfg(feature = "scrape")]
+            let got = crate::steamweb::resolve(&p.steam, &st.steam_api_key).and_then(|id| crate::steamweb::owned(id, &st.steam_api_key).map(|g| (id, g)));
+            #[cfg(not(feature = "scrape"))]
+            let got: Result<(u64, Vec<(u64, String)>), String> = Err("no online lookups in this build".into());
+            match got {
+                Ok((id, games)) => {
+                    report.push(json!({"id": p.id, "name": p.name, "games": games.len()}));
+                    let map: Map<String, Value> = games.into_iter().map(|(a, n)| (a.to_string(), json!(n))).collect();
+                    players.insert(p.id.clone(), json!({"profile": p.steam, "steamid": id.to_string(), "fetched": now_iso(), "games": map, "error": ""}));
+                }
+                Err(e) => {
+                    report.push(json!({"id": p.id, "name": p.name, "error": e}));
+                    // keep what was read last time, so one hiccup doesn't empty a library
+                    let mut old = libs["players"].get(&p.id).cloned().unwrap_or(json!({"games": {}}));
+                    old["error"] = json!(e);
+                    old["profile"] = json!(p.steam);
+                    players.insert(p.id.clone(), old);
+                }
+            }
+        }
+        libs["players"] = Value::Object(players);
+        crate::util::write_json(&self.steam_libraries_path(), &libs).map_err(|e| e.to_string())?;
+        let shared = self.shared_steam();
+        // how the shared games play together: one store lookup each, a limited number per refresh (Steam rate-limits the store)
+        #[cfg(feature = "scrape")]
+        if let Some(sh) = &shared {
+            let mut checked = 0;
+            for id in sh.keys() {
+                if !libs["modes"][id.to_string()].is_null() || checked >= 80 {
+                    continue;
+                }
+                if let Ok((online, coop, local)) = crate::steamweb::modes(*id) {
+                    libs["modes"][id.to_string()] = json!({"online": online, "onlineCoop": coop, "local": local});
+                }
+                checked += 1;
+                std::thread::sleep(Duration::from_millis(300));
+            }
+            crate::util::write_json(&self.steam_libraries_path(), &libs).map_err(|e| e.to_string())?;
+        }
+        self.refresh();
+        let online = shared.as_ref().map(|sh| sh.keys().filter(|id| libs["modes"][id.to_string()]["online"] == json!(true)).count()).unwrap_or(0);
+        Ok(json!({"players": report, "shared": shared.map(|s| s.len()), "online": online}))
     }
 
     pub fn add_sample(&self) -> R {
@@ -800,5 +937,66 @@ impl App {
 
     pub fn health(&self) -> R {
         Ok(crate::health::run(self))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn app(name: &str) -> App {
+        let d = std::env::temp_dir().join(format!("gn-app-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        App::new(d)
+    }
+
+    #[test]
+    fn what_everyone_owns_on_steam() {
+        let a = app("shared");
+        let set = |v: Value| a.save_settings(&v).unwrap();
+        set(json!({"players": [{"id": "p1", "name": "Sam", "steam": "x"}, {"id": "p2", "name": "Alex", "steam": "y"}, {"id": "p3", "name": "Kai"}]}));
+        assert!(a.shared_steam().is_none(), "nothing until two libraries are read");
+        crate::util::write_json(
+            &a.steam_libraries_path(),
+            &json!({"players": {
+                "p1": {"games": {"620": "Portal 2", "1426210": "It Takes Two", "730": "Counter-Strike 2"}},
+                "p2": {"games": {"620": "Portal 2", "730": "Counter-Strike 2", "570": "Dota 2"}},
+                "p3": {"games": {}, "error": "this profile's game details are private"}},
+                "modes": {"620": {"online": true, "onlineCoop": true, "local": true}, "730": {"online": true, "onlineCoop": false, "local": false}}}),
+        )
+        .unwrap();
+        let shared = a.shared_steam().unwrap();
+        assert_eq!(shared.keys().copied().collect::<Vec<_>>(), vec![620, 730], "a private library doesn't empty the overlap");
+        let src = a.shared_source(shared);
+        assert_eq!(src.games.iter().map(|c| c.title.as_str()).collect::<Vec<_>>(), vec!["Counter-Strike 2", "Portal 2"]);
+        let portal = crate::detect::draft(&src.games[1], DRAFT_WHY);
+        assert_eq!((portal["where"].as_str(), portal["mode"].as_str()), (Some("online"), Some("Co-op")));
+        assert!(portal.get("_group").is_none(), "grouping is for the screen, not the shelf");
+        assert!(crate::catalog::validate_game(&portal).is_empty());
+        // the picker's "we all own it" filter
+        let mut g = crate::catalog::tests::game("Portal 2");
+        g["launch"] = json!({"steam": 620});
+        a.catalog.upsert(&g, true, None).unwrap();
+        let mut d = crate::catalog::tests::game("Dota 2");
+        d["launch"] = json!({"steam": 570});
+        a.catalog.upsert(&d, true, None).unwrap();
+        a.catalog.upsert(&crate::catalog::tests::game("Console game"), true, None).unwrap();
+        let c = a.context();
+        let f = picker::Filters::from_json(&json!({"owned": true}));
+        let titles: Vec<String> = picker::pool(&a.catalog.games(), &f, &c).0.iter().map(|x| s(x, "t").to_string()).collect();
+        assert_eq!(titles, vec!["Portal 2"]);
+        assert_eq!(picker::pool(&a.catalog.games(), &picker::Filters::from_json(&json!({})), &c).0.len(), 3);
+        assert_eq!(a.bootstrap().unwrap()["steamShared"], true);
+        assert!(a.refresh_steam().unwrap_err().contains("Web API key"), "nothing goes online without a key");
+    }
+
+    #[test]
+    fn the_steam_key_never_goes_back_to_the_page() {
+        let a = app("secret");
+        a.save_settings(&json!({"steamApiKey": "ABCDEF0123456789"})).unwrap();
+        assert_eq!(a.settings().steam_api_key, "ABCDEF0123456789");
+        assert_eq!(a.bootstrap().unwrap()["settings"]["steamApiKey"], "set");
+        a.save_settings(&json!({"steamApiKey": "set"})).unwrap();
+        assert_eq!(a.settings().steam_api_key, "ABCDEF0123456789", "sending \"set\" back keeps the key");
     }
 }

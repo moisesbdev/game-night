@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **What you all own on Steam, for playing online together.** Each player can link a Steam profile (a link, SteamID64 or custom name; Settings > Who's playing > Steam accounts). With one free Steam Web API key, Refresh reads everyone's owned games, and Game Night shows the games every linked player owns: in Shelf > Add from library ("Everyone owns on Steam", those that play online together first, from Steam's own categories) and as a "Games we all own on Steam" filter. A private profile is reported plainly and keeps its last good library. Nothing is read until someone presses Refresh, and the key never goes back to the page.
+- CI tests Windows, Linux and macOS and checks the one-file Windows exe on every push; the Linux library install has a time limit and retries.
+
 ## 1.1.0
 
 Plug and play: Game Night finds your games, wherever they are, and ships as one file.
