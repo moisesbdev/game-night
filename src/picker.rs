@@ -70,6 +70,10 @@ pub struct Context {
     pub solo_rare: bool,
     /// Titles everyone in the group owns on Steam, when two or more Steam libraries are linked.
     pub all_own: Option<HashSet<String>>,
+    /// How you're playing: "couch" (same-screen games), "online" (online games, and only what everyone owns), or "" (no modes).
+    pub mode: String,
+    /// Games marked couch that Steam says also play online together.
+    pub online_ok: HashSet<String>,
 }
 
 impl Context {
@@ -87,6 +91,8 @@ impl Context {
             meh_soft: false,
             solo_rare: false,
             all_own: None,
+            mode: String::new(),
+            online_ok: HashSet::new(),
         }
     }
 
@@ -179,7 +185,8 @@ fn mood_ok(g: &Json, moods: &[String], any: bool) -> bool {
 }
 
 fn base_ok(g: &Json, f: &Filters, ctx: &Context) -> bool {
-    if f.where_ != "any" && s(g, "where") != f.where_ {
+    // with the two modes in use, the mode decides couch or online (a tile asking for "same couch" doesn't empty an online night)
+    if ctx.mode.is_empty() && f.where_ != "any" && s(g, "where") != f.where_ {
         return false;
     }
     if f.len != "any" && s(g, "len") != f.len {
@@ -207,7 +214,12 @@ fn base_ok(g: &Json, f: &Filters, ctx: &Context) -> bool {
     if !f.platform.is_empty() && !s(g, "sys").eq_ignore_ascii_case(&f.platform) {
         return false;
     }
-    if f.owned
+    match ctx.mode.as_str() {
+        "couch" if s(g, "where") != "couch" => return false,
+        "online" if s(g, "where") != "online" && !ctx.online_ok.contains(t) => return false,
+        _ => {}
+    }
+    if (f.owned || ctx.mode == "online")
         && let Some(all) = &ctx.all_own
         && !all.contains(t)
     {

@@ -85,8 +85,21 @@ impl App {
         self.settings.read().unwrap().clone()
     }
 
+    /// Who's playing in the mode in effect (couch or online); everyone when the two modes aren't in use.
     fn players(&self) -> Vec<String> {
-        self.settings().player_ids()
+        self.settings().group()
+    }
+
+    /// Switch how you're playing tonight: "couch" or "online".
+    pub fn set_mode(&self, mode: &str) -> R {
+        if !matches!(mode, "couch" | "online") {
+            return Err(bad("mode must be couch or online"));
+        }
+        let mut st = self.settings();
+        st.mode = mode.into();
+        config::save_settings(&self.paths.settings(), &st).map_err(|e| e.to_string())?;
+        *self.settings.write().unwrap() = st;
+        Ok(json!({"mode": mode}))
     }
 
     fn need_game(&self, t: &str) -> Result<Json, String> {
@@ -141,11 +154,24 @@ impl App {
 
     pub fn context(&self) -> Context {
         let st = self.settings();
-        let players = st.player_ids();
+        let players = st.group();
+        let mode = st.active_mode().to_string();
         let cutoff = (chrono::Local::now() - chrono::Duration::days(21)).format("%Y-%m-%dT%H:%M:%S").to_string();
         let mut c = Context::new(players.clone(), crate::util::today_date());
         c.marks = self.store.marks();
-        c.turn = self.store.turn(&players);
+        c.turn = self.store.turn(&players, &mode);
+        // online: games marked online, plus Steam games Steam says play online together (checked when libraries were refreshed)
+        if mode == "online" {
+            let modes = self.steam_libraries()["modes"].clone();
+            c.online_ok = self
+                .catalog
+                .games()
+                .iter()
+                .filter(|g| launch::steam_id(g).is_some_and(|id| modes[id.to_string()]["online"] == json!(true)))
+                .map(|g| s(g, "t").to_string())
+                .collect();
+        }
+        c.mode = mode;
         c.plays = self.plays();
         c.history = self.store.history().iter().filter(|h| s(h, "at") >= cutoff.as_str()).map(|h| s(h, "title").to_string()).collect();
         c.vetoes = self.store.vetoes().into_iter().collect();
@@ -195,7 +221,8 @@ impl App {
 
     pub fn bootstrap(&self) -> R {
         let st = self.settings();
-        let players = st.player_ids();
+        let players = st.group();
+        let group: Vec<&config::Player> = st.players.iter().filter(|p| players.contains(&p.id)).collect();
         let (plays, marks, progress, avail, steam) = (self.plays(), self.store.marks(), self.store.progress(), self.availability(), self.steam_root());
         let games: Vec<Json> = self.catalog.games().iter().map(|g| self.game_view(g, &plays, &marks, &progress, &avail, &st, steam.as_deref())).collect();
         let mut platforms: Vec<String> = games.iter().map(|g| s(g, "sys").to_string()).collect();
@@ -232,7 +259,7 @@ impl App {
             }
         };
         Ok(json!({
-            "version": VERSION, "players": st.players, "turn": self.store.turn(&players), "games": games, "wishlist": self.catalog.wishlist(),
+            "version": VERSION, "players": group, "allPlayers": st.players, "mode": st.active_mode(), "modes": st.has_modes(), "turn": self.store.turn(&players, st.active_mode()), "games": games, "wishlist": self.catalog.wishlist(),
             "history": hist[hist.len().saturating_sub(30)..], "vetoes": self.store.vetoes(), "today": today(), "platforms": platforms,
             "settings": self.settings_view(&st), "notices": notices, "warnings": warnings, "problems": self.catalog.problems(), "wheel": wheel,
             "scrape": cfg!(feature = "scrape"),
@@ -306,9 +333,9 @@ impl App {
 
     pub fn confirm(&self, t: &str) -> R {
         self.need_game(t)?;
-        let players = self.players();
-        let e = self.store.confirm(t, &players)?;
-        Ok(json!({"entry": e, "turn": self.store.turn(&players)}))
+        let (players, st) = (self.players(), self.settings());
+        let e = self.store.confirm(t, &players, st.active_mode())?;
+        Ok(json!({"entry": e, "turn": self.store.turn(&players, st.active_mode())}))
     }
 
     pub fn veto(&self, t: &str) -> R {
@@ -323,8 +350,10 @@ impl App {
     }
 
     pub fn set_turn(&self, pid: &str) -> R {
-        self.need_player(pid)?;
-        self.store.set_turn(pid)?;
+        if !self.players().iter().any(|p| p == pid) {
+            return Err(bad("that player isn't playing in this mode"));
+        }
+        self.store.set_turn(pid, self.settings().active_mode())?;
         Ok(json!({"turn": pid}))
     }
 
@@ -375,7 +404,7 @@ impl App {
             a["minutesSoFar"] = json!(crate::util::minutes_between(s(a, "start"), &now_iso()));
         }
         Ok(
-            json!({"active": act, "pending": if st.ask_after_game { self.sessions.pending() } else { vec![] }, "ask": self.sessions.ask_whom(&st.player_ids()), "askEnabled": st.ask_after_game}),
+            json!({"active": act, "pending": if st.ask_after_game { self.sessions.pending() } else { vec![] }, "ask": self.sessions.ask_whom(&st.group()), "askEnabled": st.ask_after_game}),
         )
     }
 
@@ -388,8 +417,9 @@ impl App {
         if ok {
             return Ok(json!({"session": self.sessions.confirm_started(sid)?}));
         }
-        self.store.undo_confirm(s(&x, "title"))?;
-        Ok(json!({"session": self.sessions.mark_failed(sid)?, "turn": self.store.turn(&self.players())}))
+        let st = self.settings();
+        self.store.undo_confirm(s(&x, "title"), st.active_mode())?;
+        Ok(json!({"session": self.sessions.mark_failed(sid)?, "turn": self.store.turn(&self.players(), st.active_mode())}))
     }
 
     pub fn rate_session(&self, sid: &str, pid: &str, rating: &str) -> R {
@@ -706,7 +736,7 @@ impl App {
     /// The Steam games every linked player owns, {appid: name}, once two or more players have a library; else None.
     pub fn shared_steam(&self) -> Option<std::collections::BTreeMap<u64, String>> {
         let libs = self.steam_libraries();
-        let ids = self.players();
+        let ids = self.settings().online_group(); // "what you all own" is about the people you play online with
         let owned: Vec<HashMap<u64, String>> = ids
             .iter()
             .filter_map(|p| libs["players"].get(p))
@@ -988,6 +1018,64 @@ mod tests {
         assert_eq!(picker::pool(&a.catalog.games(), &picker::Filters::from_json(&json!({})), &c).0.len(), 3);
         assert_eq!(a.bootstrap().unwrap()["steamShared"], true);
         assert!(a.refresh_steam().unwrap_err().contains("Web API key"), "nothing goes online without a key");
+    }
+
+    #[test]
+    fn couch_and_online_are_two_groups_with_their_own_games_and_turns() {
+        let a = app("modes");
+        // a couple only: no modes, everyone, nothing filtered
+        a.save_settings(&json!({"players": [{"id": "p1", "name": "Sam"}, {"id": "p2", "name": "Alex"}]})).unwrap();
+        assert_eq!((a.settings().active_mode(), a.bootstrap().unwrap()["modes"].as_bool()), ("", Some(false)));
+        // Sam plays both ways, Alex on the couch, Kai and Jo online
+        a.save_settings(&json!({"players": [
+            {"id": "p1", "name": "Sam", "couch": true, "online": true},
+            {"id": "p2", "name": "Alex", "couch": true, "online": false},
+            {"id": "p3", "name": "Kai", "couch": false, "online": true},
+            {"id": "p4", "name": "Jo", "couch": false, "online": true}]}))
+            .unwrap();
+        let game = |t: &str, wh: &str, steam: Option<u64>| {
+            let mut g = crate::catalog::tests::game(t);
+            g["where"] = json!(wh);
+            if let Some(id) = steam {
+                g["launch"] = json!({"steam": id});
+            }
+            a.catalog.upsert(&g, true, None).unwrap();
+        };
+        game("Couch only", "couch", None);
+        game("Couch, plays online too", "couch", Some(620));
+        game("Online, all own", "online", Some(730));
+        game("Online, Jo lacks it", "online", Some(570));
+        crate::util::write_json(
+            &a.steam_libraries_path(),
+            &json!({"players": {
+                "p1": {"games": {"620": "a", "730": "b", "570": "c"}}, "p3": {"games": {"620": "a", "730": "b", "570": "c"}}, "p4": {"games": {"620": "a", "730": "b"}}},
+                "modes": {"620": {"online": true}, "730": {"online": true}, "570": {"online": true}}}),
+        )
+        .unwrap();
+        let pool = || -> Vec<String> {
+            let c = a.context();
+            let mut v: Vec<String> =
+                picker::pool(&a.catalog.games(), &picker::Filters::from_json(&json!({"where": "couch"})), &c).0.iter().map(|x| s(x, "t").to_string()).collect();
+            v.sort();
+            v
+        };
+        assert_eq!(a.settings().active_mode(), "couch");
+        assert_eq!(a.players(), vec!["p1", "p2"]);
+        assert_eq!(pool(), vec!["Couch only", "Couch, plays online too"], "couch draws same-screen games");
+        a.confirm("Couch only").unwrap();
+        assert_eq!(a.bootstrap().unwrap()["turn"], "p2", "the couch pick moved to Alex");
+        a.set_mode("online").unwrap();
+        assert_eq!(a.players(), vec!["p1", "p3", "p4"]);
+        assert_eq!(a.bootstrap().unwrap()["turn"], "p1", "online keeps its own turn");
+        assert_eq!(
+            pool(),
+            vec!["Couch, plays online too", "Online, all own"],
+            "online games and Steam-online ones, only what the online group all own, whatever the tile asked"
+        );
+        assert!(a.set_turn("p2").is_err(), "Alex isn't in the online group");
+        assert!(a.set_mode("sofa").is_err());
+        a.set_mode("couch").unwrap();
+        assert_eq!(a.bootstrap().unwrap()["turn"], "p2", "back on the couch, it's still Alex's pick");
     }
 
     #[test]

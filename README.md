@@ -6,6 +6,7 @@ You've got a few hundred games between you and an evening together, and twenty m
 
 - **Made for the people on the couch.** Set up the group once: a couple, a few friends, a housemate who drops by, up to eight. Everyone's marks count, the pick goes round the room, and anyone can say "not for us".
 - **Your Steam library, in one tap.** Game Night finds Steam on its own: the registry and the usual places, plus a look at every drive for Steam libraries (Windows, Linux native/Flatpak/Snap and macOS). It lists what's installed and adds what you pick, and Play starts the game through Steam.
+- **Two ways of playing, two groups.** Mark who plays on the couch and who plays online (your partner on the couch, friends online, or anyone both). Tonight then has an **On the couch · Online** switch: each has its own group, its own turn, and its own games (same-screen ones on the couch; online ones, and only what everyone owns, online).
 - **Playing online with friends? See what you all own.** Link each person's Steam profile (Settings > Who's playing) and Game Night shows the games everyone owns, the ones that play online together first, and a "Games we all own" filter keeps the pick to those. It uses Steam's official Web API with one free key; each profile's game details need to be public.
 - **Everything else it can find, too.** On first run Game Night shows what it found on your computer: ES-DE (your emulated games, with their descriptions and box art), Epic Games, GOG Galaxy, RetroArch playlists, and Heroic and Lutris on Linux. Tick what to bring in.
 - **Your other games, without typing paths.** Settings suggests the folders on your drives that hold games (Epic, GOG, Xbox app, EA, Ubisoft, Riot, your Desktop's shortcuts, `~/Games`, Heroic), each with how many it found, one tap to add, or **Browse...** with your system's own folder picker. Console games can sit on the shelf too: they're drawn, you just press start yourself.
@@ -14,7 +15,7 @@ You've got a few hundred games between you and an evening together, and twenty m
 - **One question on screen.** "What shall we play?", one big button, and nine one-tap feelings: cozy, a quick round, all of us, silly, a little spooky, a little rivalry, something new to us, one controller, a proper evening. Filters, three cards to strike from, an evening plan, a coin toss and a quick taste test are one tap away.
 - **Watch before you commit.** Your own preview videos, or the game's trailer and a couch co-op clip from YouTube, only when you press, always muted.
 - **A journal of your nights.** Who chose, how long you played, who liked it, what you finished. "Our year" turns it into a few slides, and a memories screen shows your nights one at a time when the app is left alone.
-- **Couch-ready.** Full controller support (D-pad navigation, A/B/X/Y, an on-screen keyboard, dropdowns as lists), a couch mode with larger text, and WCAG AA contrast in light and dark themes. In October it dresses up for Halloween.
+- **Couch-ready.** Full controller support (D-pad navigation, A/B/X/Y, an on-screen keyboard, dropdowns as lists), big text for the TV, and WCAG AA contrast in light and dark themes. In October it dresses up for Halloween.
 
 ## Get it
 

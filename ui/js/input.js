@@ -1,4 +1,4 @@
-/* Couch mode, the seasonal look and the keyboard shortcut. The controller lives in pad.js. */
+/* Big text for the TV (the "couch" class), the seasonal look and the keyboard shortcut. The controller lives in pad.js. */
 import { S, h, svg } from "./core.js";
 import { season } from "./logic.js";
 import { render } from "./main.js";

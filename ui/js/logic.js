@@ -143,6 +143,14 @@ export function describeFilters(f) {
 /** The seasonal look for a date: "halloween" all through October, otherwise null. */
 export function season(now = new Date()) { return now.getMonth() === 9 ? "halloween" : null; }
 
+/** Online nights have no use for "One controller": that tile becomes this one (the grid stays three across). */
+export const ONLINE_TILE = { id: "long", label: "Something long-running", icon: "clock", f: { len: "long" } };
+
+/** The quick tiles for how you're playing: online swaps "One controller" for ONLINE_TILE. */
+export function tilesFor(picks, mode) {
+  return mode === "online" ? picks.map(q => (q.id === "one" ? ONLINE_TILE : q)) : picks;
+}
+
 /** The quick tiles in the order to show them: in the Halloween look the spooky one comes first. */
 export function quickOrder(picks, look) {
   if (look !== "halloween") return picks;

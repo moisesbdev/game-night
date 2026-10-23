@@ -1,5 +1,5 @@
 /* The Settings section of More: who's playing, how picks treat "not for us", where games and art live, and the look. */
-import { S, api, h, reload, settings, toast } from "./core.js";
+import { S, api, chip, h, reload, settings, toast } from "./core.js";
 import { seasonOn, setCouch, setSeasonOn } from "./input.js";
 import { openPadTest } from "./pad.js";
 import { buildTurn, render } from "./main.js";
@@ -14,10 +14,11 @@ function playersPanel(draft) {
     box.replaceChildren(...draft.map((p, i) => h("div", { class: "row" },
       h("label", { class: "sr", for: "pl-" + p.id }, "Player " + (i + 1)),
       h("input", { type: "text", id: "pl-" + p.id, value: p.name, maxlength: "24", oninput: e => { p.name = e.target.value; } }),
+      ["couch", "online"].map(k => { const c = chip(k === "couch" ? "Couch" : "Online", p[k], () => { p[k] = !p[k]; c.setAttribute("aria-pressed", String(p[k])); }, { "aria-label": p.name + " plays " + (k === "couch" ? "on the couch" : "online") }); return c; }),
       draft.length > 1 ? h("button", { class: "link", type: "button", onclick: () => { draft.splice(i, 1); paint(); } }, "Remove") : null)),
       draft.length < MAX_PLAYERS ? h("button", { class: "btn", type: "button", onclick: () => {
         let n = 1; while (draft.some(p => p.id === "p" + n)) n++;
-        draft.push({ id: "p" + n, name: "Player " + (draft.length + 1) }); paint(); box.querySelector("input:last-of-type")?.focus();
+        draft.push({ id: "p" + n, name: "Player " + (draft.length + 1), couch: true, online: false }); paint(); box.querySelector("input:last-of-type")?.focus();
       } }, "Add a player") : h("p", { class: "small" }, "Eight is the most."));
   };
   paint();
@@ -96,7 +97,7 @@ function mediaPanel(draft) {
 export async function settingsSection() {
   const wt = (await api("/api/weights")).table;
   const b = S.boot, st = settings();
-  const draft = { players: (b.players || []).map(p => ({ ...p })), media: (st.mediaDirs || []).map(m => ({ ...m })), dirs: [...(st.gameDirs || [])] };
+  const draft = { players: (b.allPlayers || b.players || []).map(p => ({ ...p, couch: p.couch !== false, online: !!p.online })), media: (st.mediaDirs || []).map(m => ({ ...m })), dirs: [...(st.gameDirs || [])] };
   const box = (id, on) => h("input", { type: "checkbox", id, checked: on });
   const lc = box("launch", st.launchEnabled), askBox = box("ask", st.askAfterGame !== false), trailerBox = box("trailers", st.trailersEnabled !== false);
   const meh = h("select", { id: "meh" }, [["leave-out", "Leaves the game out of the draw"], ["rarer", "Makes it rarer (x0.3)"]].map(([v, l]) => h("option", { value: v, selected: st.notForUs === v }, l)));
@@ -117,7 +118,7 @@ export async function settingsSection() {
   const save = async quiet => {
     try {
       const r = await api("/api/settings", {
-        players: draft.players.map(p => ({ id: p.id, name: p.name.trim(), steam: (p.steam || "").trim() })), steamApiKey: steamKey.value.trim(), notForUs: meh.value, launchEnabled: lc.checked, askAfterGame: askBox.checked, trailersEnabled: trailerBox.checked,
+        players: draft.players.map(p => ({ id: p.id, name: p.name.trim(), steam: (p.steam || "").trim(), couch: p.couch !== false, online: !!p.online })), steamApiKey: steamKey.value.trim(), notForUs: meh.value, launchEnabled: lc.checked, askAfterGame: askBox.checked, trailersEnabled: trailerBox.checked,
         gameDirs: draft.dirs, steamDir: steamDir.value.trim(), mediaDirs: draft.media.filter(m => m.path.trim()), steamgriddbKey: gridKey.value.trim(), thegamesdbKey: tgdbKey.value.trim(),
         screenscraperDevId: ssDev.value.trim(), screenscraperDevPassword: ssDevPw.value.trim(), screenscraperUser: ssUser.value.trim(), screenscraperPassword: ssPw.value.trim(),
       });
@@ -128,7 +129,7 @@ export async function settingsSection() {
     } catch (e) { toast(e.message); }
   };
   return h("div", {},
-    h("div", { class: "panel" }, h("b", {}, "Who's playing"), h("p", { class: "small" }, "Up to eight. The pick goes round in this order."), playersPanel(draft.players),
+    h("div", { class: "panel" }, h("b", {}, "Who's playing"), h("p", { class: "small" }, "Up to eight. Mark who plays on the couch and who plays online: with both, Tonight gets a switch between the two, each with its own group and turn."), playersPanel(draft.players),
       h("label", { class: "f", for: "meh" }, "When someone marks a game \"not for us\""), meh, steamAccountsPanel(draft.players, steamKey, save)),
     h("div", { class: "panel" }, h("b", {}, "Where your games are"),
       h("p", { class: "small" }, "Steam, ES-DE, Epic, GOG, RetroArch, Heroic and Lutris are found by themselves. Add a folder only for games that live somewhere else."), gameFoldersPanel(draft.dirs),
@@ -146,7 +147,7 @@ export async function settingsSection() {
       h("label", {}, trailerBox, " Allow trailers from YouTube (only when pressed, always muted)")),
     h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: () => save() }, "Save settings")),
     h("div", { class: "panel" }, h("b", {}, "On this screen"),
-      h("label", {}, couchBox, " Couch mode: bigger text for the sofa"),
+      h("label", {}, couchBox, " Big text for the TV"),
       h("label", {}, seasonBox, " Halloween look in October"),
       h("label", {}, memBox, " Show memories when left alone"),
       h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: openPadTest }, "Test the controller"), h("button", { class: "btn", type: "button", onclick: () => openMemories() }, "Show memories now"))),

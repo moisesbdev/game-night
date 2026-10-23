@@ -18,6 +18,15 @@ pub struct Player {
     /// Their Steam profile (a link, SteamID64 or custom name), to see which games everyone owns. Optional.
     #[serde(default)]
     pub steam: String,
+    /// Plays on the couch (the same screen) and/or online. Couch by default.
+    #[serde(default = "yes")]
+    pub couch: bool,
+    #[serde(default)]
+    pub online: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 /// A folder of box art, screenshots and preview videos. `slug`: `<dir>/covers/<slug>.png` and so on.
@@ -36,6 +45,8 @@ fn slug_layout() -> String {
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     pub players: Vec<Player>,
+    /// How you're playing tonight: "couch" or "online". Each has its own group of players (and its own turn).
+    pub mode: String,
     /// What one person's "not for us" does: "leave-out" (the game isn't drawn) or "rarer" (x0.3).
     pub not_for_us: String,
     pub launch_enabled: bool,
@@ -64,9 +75,10 @@ impl Default for Settings {
     fn default() -> Self {
         Settings {
             players: vec![
-                Player { id: "p1".into(), name: "Player 1".into(), steam: String::new() },
-                Player { id: "p2".into(), name: "Player 2".into(), steam: String::new() },
+                Player { id: "p1".into(), name: "Player 1".into(), steam: String::new(), couch: true, online: false },
+                Player { id: "p2".into(), name: "Player 2".into(), steam: String::new(), couch: true, online: false },
             ],
+            mode: "couch".into(),
             not_for_us: "leave-out".into(),
             launch_enabled: true,
             ask_after_game: true,
@@ -91,6 +103,37 @@ impl Settings {
         self.players.iter().map(|p| p.id.clone()).collect()
     }
 
+    /// The two ways of playing are in use once someone plays online and someone plays on the couch.
+    pub fn has_modes(&self) -> bool {
+        self.players.iter().any(|p| p.online) && self.players.iter().any(|p| p.couch)
+    }
+
+    /// The mode in effect: "online" or "couch" when both groups exist, else "" (everyone plays every way; nothing is filtered).
+    pub fn active_mode(&self) -> &str {
+        if !self.has_modes() {
+            ""
+        } else if self.mode == "online" {
+            "online"
+        } else {
+            "couch"
+        }
+    }
+
+    /// Who's playing in the mode in effect (everyone when the modes aren't in use).
+    pub fn group(&self) -> Vec<String> {
+        match self.active_mode() {
+            "online" => self.players.iter().filter(|p| p.online).map(|p| p.id.clone()).collect(),
+            "couch" => self.players.iter().filter(|p| p.couch).map(|p| p.id.clone()).collect(),
+            _ => self.player_ids(),
+        }
+    }
+
+    /// The online group (for "what you all own on Steam"), or everyone when nobody is marked online.
+    pub fn online_group(&self) -> Vec<String> {
+        let g: Vec<String> = self.players.iter().filter(|p| p.online).map(|p| p.id.clone()).collect();
+        if g.is_empty() { self.player_ids() } else { g }
+    }
+
     pub fn is_player(&self, id: &str) -> bool {
         self.players.iter().any(|p| p.id == id)
     }
@@ -109,6 +152,12 @@ impl Settings {
         }
         if self.players.is_empty() {
             self.players = Settings::default().players;
+        }
+        if !matches!(self.mode.as_str(), "couch" | "online") {
+            self.mode = "couch".into();
+        }
+        if !self.players.iter().any(|p| p.couch) {
+            self.players.iter_mut().for_each(|p| p.couch = true); // someone always plays on the couch
         }
         if !matches!(self.not_for_us.as_str(), "leave-out" | "rarer") {
             self.not_for_us = "leave-out".into();
@@ -216,10 +265,10 @@ mod tests {
     fn clean_repairs_hand_edits() {
         let s = Settings {
             players: vec![
-                Player { id: "p1".into(), name: "  ".into(), steam: String::new() },
-                Player { id: "p1".into(), name: "dup".into(), steam: String::new() },
-                Player { id: "bad id!".into(), name: "x".into(), steam: String::new() },
-                Player { id: "p2".into(), name: "A very long name that goes on and on".into(), steam: String::new() },
+                Player { id: "p1".into(), name: "  ".into(), steam: String::new(), couch: true, online: false },
+                Player { id: "p1".into(), name: "dup".into(), steam: String::new(), couch: true, online: false },
+                Player { id: "bad id!".into(), name: "x".into(), steam: String::new(), couch: true, online: false },
+                Player { id: "p2".into(), name: "A very long name that goes on and on".into(), steam: String::new(), couch: true, online: false },
             ],
             not_for_us: "nonsense".into(),
             port: 80,

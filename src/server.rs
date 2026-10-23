@@ -182,6 +182,7 @@ fn post(app: &App, path: &str, d: &Value) -> Result<Json, (u16, String)> {
         "/api/settings" => app.save_settings(d),
         "/api/import" => app.import(d),
         "/api/sample" => app.add_sample(),
+        "/api/mode" => app.set_mode(s(d, "mode")),
         "/api/steam/refresh" => app.refresh_steam(),
         "/api/repair-moved" => app.repair_moved(),
         "/api/pick-folder" => app.pick_folder(s(d, "title"), s(d, "start")),

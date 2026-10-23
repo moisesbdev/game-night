@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Two ways of playing: on the couch and online, each with its own group.** Mark who plays on the couch and who plays online (Settings > Who's playing). Once both groups exist, Tonight gets an **On the couch · Online** switch. Each mode has its own players (their marks, the "All of us" tile, the after-game questions), its own turn, and its own games: same-screen games on the couch; online games plus Steam games Steam says play online, and only what everyone in the online group owns, online. Online swaps the One controller tile for "Something long-running" and hides the Where filter (the mode decides). A couple who only plays together sees no switch at all.
+- "Couch mode" (bigger text) is now called **Big text for the TV**, so "couch" means one thing.
 - **What you all own on Steam, for playing online together.** Each player can link a Steam profile (a link, SteamID64 or custom name; Settings > Who's playing > Steam accounts). With one free Steam Web API key, Refresh reads everyone's owned games, and Game Night shows the games every linked player owns: in Shelf > Add from library ("Everyone owns on Steam", those that play online together first, from Steam's own categories) and as a "Games we all own on Steam" filter. A private profile is reported plainly and keeps its last good library. Nothing is read until someone presses Refresh, and the key never goes back to the page.
 - CI tests Windows, Linux and macOS and checks the one-file Windows exe on every push; the Linux library install has a time limit and retries.
 

@@ -523,3 +523,7 @@ body.halloween{
 .libgroup{margin-top:.8rem}
 .hero.welcome .row{margin:.4rem 0 .8rem}
 details.more{margin-top:.8rem}details.more>summary{cursor:pointer;color:var(--mute);font-weight:700}
+
+/* how you're playing tonight */
+.modeswitch{display:flex;gap:6px;justify-content:center;margin:.2rem 0 .4rem}
+.players .row .chip{padding:4px 12px;font-size:.9rem}

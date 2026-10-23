@@ -35,7 +35,7 @@ fn clean(raw: &Value) -> Value {
         .into_iter()
         .flatten()
         .filter(|h| h.get("title").is_some_and(Value::is_string) && h.get("at").is_some_and(Value::is_string))
-        .map(|h| json!({"title": s(h, "title"), "at": s(h, "at"), "chose": if valid_pid(s(h, "chose")) { s(h, "chose") } else { "" }}))
+        .map(|h| json!({"title": s(h, "title"), "at": s(h, "at"), "chose": if valid_pid(s(h, "chose")) { s(h, "chose") } else { "" }, "mode": if s(h, "mode") == "online" { "online" } else { "couch" }}))
         .collect();
     let hist = hist[hist.len().saturating_sub(KEEP_HISTORY)..].to_vec();
     let mut progress = Map::new();
@@ -49,6 +49,7 @@ fn clean(raw: &Value) -> Value {
     let vet = raw.get("vetoes").cloned().unwrap_or(json!({}));
     json!({
         "v": 3, "marks": marks, "history": hist, "turn": if valid_pid(s(raw, "turn")) { s(raw, "turn") } else { "" },
+        "turnOnline": if valid_pid(s(raw, "turnOnline")) { s(raw, "turnOnline") } else { "" },
         "vetoes": {"day": s(&vet, "day"), "titles": vet.get("titles").and_then(Value::as_array).map(|a| a.iter().filter(|x| x.is_string()).cloned().collect::<Vec<_>>()).unwrap_or_default()},
         "progress": progress,
     })
@@ -157,15 +158,20 @@ impl Store {
         self.read(|st| st["history"].as_array().cloned().unwrap_or_default())
     }
 
-    /// Whose pick it is: the stored player if they are still in the group, else the first player.
-    pub fn turn(&self, players: &[String]) -> String {
-        let t = self.read(|st| s(st, "turn").to_string());
+    /// Each way of playing keeps its own turn: "couch" (the original field) and "online".
+    fn turn_key(mode: &str) -> &'static str {
+        if mode == "online" { "turnOnline" } else { "turn" }
+    }
+
+    /// Whose pick it is in this mode: the stored player if they are still in the group, else the group's first player.
+    pub fn turn(&self, players: &[String], mode: &str) -> String {
+        let t = self.read(|st| s(st, Self::turn_key(mode)).to_string());
         if players.contains(&t) { t } else { players.first().cloned().unwrap_or_default() }
     }
 
-    pub fn set_turn(&self, pid: &str) -> Result<(), String> {
+    pub fn set_turn(&self, pid: &str, mode: &str) -> Result<(), String> {
         self.commit(|st| {
-            st["turn"] = json!(pid);
+            st[Self::turn_key(mode)] = json!(pid);
             Ok(())
         })
     }
@@ -175,23 +181,23 @@ impl Store {
         players.get(i).cloned().unwrap_or_default()
     }
 
-    /// "We'll play this": record who chose it, and hand the pick to the next player.
-    pub fn confirm(&self, title: &str, players: &[String]) -> Result<Json, String> {
-        let cur = self.turn(players);
+    /// "We'll play this": record who chose it (and how you played), and hand the pick to the next player of this group.
+    pub fn confirm(&self, title: &str, players: &[String], mode: &str) -> Result<Json, String> {
+        let cur = self.turn(players, mode);
         self.commit(|st| {
-            let e = json!({"title": title, "at": now_iso(), "chose": cur});
+            let e = json!({"title": title, "at": now_iso(), "chose": cur, "mode": if mode == "online" { "online" } else { "couch" }});
             let h = st["history"].as_array_mut().unwrap();
             h.push(e.clone());
             if h.len() > KEEP_HISTORY {
                 h.remove(0);
             }
-            st["turn"] = json!(Self::next_of(players, &cur));
+            st[Self::turn_key(mode)] = json!(Self::next_of(players, &cur));
             Ok(e)
         })
     }
 
     /// Take back the most recent pick of this game within 12 hours (it never really started), and give the turn back.
-    pub fn undo_confirm(&self, title: &str) -> Result<bool, String> {
+    pub fn undo_confirm(&self, title: &str, mode: &str) -> Result<bool, String> {
         let cutoff = (chrono::Local::now() - chrono::Duration::hours(12)).format("%Y-%m-%dT%H:%M:%S").to_string();
         self.commit(|st| {
             let h = st["history"].as_array_mut().unwrap();
@@ -199,7 +205,7 @@ impl Store {
                 let chose = s(&h[i], "chose").to_string();
                 h.remove(i);
                 if !chose.is_empty() {
-                    st["turn"] = json!(chose);
+                    st[Self::turn_key(mode)] = json!(chose);
                 }
                 return Ok(true);
             }
@@ -319,20 +325,20 @@ mod tests {
         st.set_mark("A", "p2", Some("loved")).unwrap();
         assert!(st.set_mark("A", "p2", Some("adored")).is_err());
         assert_eq!(st.mark("A", "p2").as_deref(), Some("loved"));
-        assert_eq!(st.turn(&players), "p1");
-        st.confirm("A", &players).unwrap();
-        st.confirm("B", &players).unwrap();
-        assert_eq!(st.turn(&players), "p3");
-        st.confirm("C", &players).unwrap();
-        assert_eq!(st.turn(&players), "p1", "the pick goes round the whole group");
-        assert!(st.undo_confirm("C").unwrap());
-        assert_eq!(st.turn(&players), "p3");
+        assert_eq!(st.turn(&players, "couch"), "p1");
+        st.confirm("A", &players, "couch").unwrap();
+        st.confirm("B", &players, "couch").unwrap();
+        assert_eq!(st.turn(&players, "couch"), "p3");
+        st.confirm("C", &players, "couch").unwrap();
+        assert_eq!(st.turn(&players, "couch"), "p1", "the pick goes round the whole group");
+        assert!(st.undo_confirm("C", "couch").unwrap());
+        assert_eq!(st.turn(&players, "couch"), "p3");
         st.veto("A").unwrap();
         assert_eq!(st.vetoes(), vec!["A"]);
         let again = Store::open(&p);
         assert_eq!(again.history().len(), 2);
         assert_eq!(again.vetoes(), vec!["A"]);
-        assert_eq!(again.turn(&["p1".into(), "p2".into()]), "p1", "a player who left the group hands the pick to the first player");
+        assert_eq!(again.turn(&["p1".into(), "p2".into()], "couch"), "p1", "a player who left the group hands the pick to the first player");
     }
 
     #[test]
@@ -349,7 +355,7 @@ mod tests {
         let p = temp("import");
         let st = Store::open(&p);
         st.set_progress("A", "chapter 3", true).unwrap();
-        st.confirm("A", &["p1".into()]).unwrap();
+        st.confirm("A", &["p1".into()], "couch").unwrap();
         let n = st
             .import(
                 &json!({"marks": {"A": {"p1": "loved"}, "Gone": {"p1": "loved"}}, "history": [{"title": "A", "at": "2026-01-01T20:00:00", "chose": "p1"}]}),

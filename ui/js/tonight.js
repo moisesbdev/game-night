@@ -1,6 +1,6 @@
 /* The Tonight view: one calm screen. A big "Surprise us" button and a few feelings; everything else (filters, the wheel, three cards, the plan, the taste test) is one tap away. */
 import { S, api, chip, gameByTitle, h, icon, mascot, nm, pids, players, poster, reload, settings, toast } from "./core.js";
-import { LEN_HELP, LEN_NAME, MOODS, QUICK_PICKS, ago, cleanFilters, daysSince, describeFilters, fmtMinutes, fmtSeconds, greeting, nightKey, paceLine, playersLabel, quickLabel, quickOrder, resolveFilters, watchFirst } from "./logic.js";
+import { LEN_HELP, LEN_NAME, MOODS, QUICK_PICKS, ago, cleanFilters, daysSince, describeFilters, fmtMinutes, fmtSeconds, greeting, nightKey, paceLine, playersLabel, quickLabel, quickOrder, resolveFilters, tilesFor, watchFirst } from "./logic.js";
 import { buildTurn, go, render } from "./main.js";
 import { celebrateSpooky } from "./spooky.js";
 import { foundSummary } from "./library.js";
@@ -39,7 +39,7 @@ export function buildFilters() {
   const F = S.filters, row = (label, ...kids) => h("div", { class: "row", role: "group", "aria-label": label }, h("span", { class: "t" }, label), kids);
   const set = (k, v) => () => setFilter(k, v);
   return h("fieldset", { id: "filters", disabled: S.spinning },
-    row("Where", chip("Any", F.where === "any", set("where", "any")), chip("Same couch, one screen", F.where === "couch", set("where", "couch")), chip("Online, two computers", F.where === "online", set("where", "online"))),
+    S.boot.modes ? null : row("Where", chip("Any", F.where === "any", set("where", "any")), chip("Same couch, one screen", F.where === "couch", set("where", "couch")), chip("Online, two computers", F.where === "online", set("where", "online"))),
     row(F.two ? "First mood" : "Mood", MOODS.map(([v, l]) => chip(l, F.A.includes(v), () => toggleMood("A", v)))),
     F.two ? row("Second mood", MOODS.map(([v, l]) => chip(l, F.B.includes(v), () => toggleMood("B", v)))) : null,
     row("Moods", chip("Must fit all picked", F.match === "all", set("match", "all")), chip("Any of them", F.match === "any", set("match", "any")), chip("Two different moods", F.two, set("two", !F.two))),
@@ -48,7 +48,7 @@ export function buildFilters() {
     (S.boot.platforms || []).length > 1 ? row("Platform", chip("Any", !F.platform, set("platform", "")), S.boot.platforms.map(p => chip(p, F.platform === p, set("platform", p)))) : null,
     row("Skill gap", chip("Any", F.gap === 1, set("gap", 1)), chip("3+ dots", F.gap === 3, set("gap", 3)), chip("4+ dots", F.gap === 4, set("gap", 4)), chip("5 dots (skill barely matters)", F.gap === 5, set("gap", 5))),
     row("Show", chip("Hide ones played or marked not for us", F.hide, set("hide", !F.hide)), chip("Only games new to us", F.fresh, set("fresh", !F.fresh)), chip("One controller (one plays, the others watch)", F.one, set("one", !F.one)),
-      S.boot.steamShared ? chip("Games we all own on Steam", F.owned, set("owned", !F.owned)) : null));
+      S.boot.steamShared && !S.boot.modes ? chip("Games we all own on Steam", F.owned, set("owned", !F.owned)) : null));
 }
 
 export function openFilters() {
@@ -115,12 +115,25 @@ function welcomeView() {
   return card;
 }
 
+/** How you're playing tonight, when both groups exist: one tap switches who's playing, their turn, and which games are drawn. */
+function modeSwitch() {
+  if (!S.boot.modes) return null;
+  const pick = async m => {
+    if (m === S.boot.mode || S.spinning) return;
+    try { await api("/api/mode", { mode: m }); await reload(); buildTurn(); S.result = null; S.seen = []; renderHome(); schedulePreview(); toast(m === "online" ? "Online tonight: " + players().map(p => p.name).join(", ") : "On the couch tonight: " + players().map(p => p.name).join(", ")); }
+    catch (e) { toast(e.message); }
+  };
+  return h("div", { class: "modeswitch", role: "group", "aria-label": "How you're playing tonight" },
+    [["couch", "On the couch"], ["online", "Online"]].map(([m, l]) => h("button", { type: "button", class: "chip", "aria-pressed": String(S.boot.mode === m), onclick: () => pick(m) }, l)));
+}
+
 function heroView(mode) {
   if (!S.boot.games.length) return welcomeView();
   const b = S.boot, narrowed = describeFilters(S.filters);
-  const tiles = quickOrder(QUICK_PICKS, document.body.dataset.season).map((q, i) => h("button", { class: "qtile", type: "button", "data-id": q.id, style: "--i:" + i, disabled: S.spinning, onclick: () => spin(resolveFilters(q.f, pids().length)) }, h("span", { class: "qicon" }, icon(q.icon)), h("span", {}, quickLabel(q, pids().length))));
+  const tiles = quickOrder(tilesFor(QUICK_PICKS, b.mode), document.body.dataset.season).map((q, i) => h("button", { class: "qtile", type: "button", "data-id": q.id, style: "--i:" + i, disabled: S.spinning, onclick: () => spin(resolveFilters(q.f, pids().length)) }, h("span", { class: "qicon" }, icon(q.icon)), h("span", {}, quickLabel(q, pids().length))));
   return h("div", { class: "hero" + (mode ? " " + mode : "") },
     mascot("hero-mascot"),
+    modeSwitch(),
     h("p", { class: "kicker" }, greeting()),
     h("h1", {}, "What shall we play?"),
     h("p", { class: "lede count" }, b.games.length + " games in the draw"),
