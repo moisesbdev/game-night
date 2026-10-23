@@ -1,9 +1,12 @@
 name: CI
 
+# Pushes and pull requests test on Linux only: on a private repo GitHub counts Windows minutes x2 and macOS x10.
+# "Run workflow" (manual) tests all three systems; the release workflow builds all three for every tag.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-latest]
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["ubuntu-24.04","windows-latest","macos-latest"]' || '["ubuntu-24.04"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
