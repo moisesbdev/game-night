@@ -1,7 +1,7 @@
 //! Scrapers: fill in a game's details and art from online sources, only when someone presses a button.
 //!
-//! Each source is a `Provider`; adding one is one more impl. Built in: the Steam store (no key) and SteamGridDB (art; needs a key
-//! from Settings). Results never overwrite what someone wrote, except on a draft (a game imported but not yet checked), whose
+//! Each source is a `Provider`; adding one is one more impl. Built in: the Steam store (no key), TheGamesDB (needs an API key),
+//! ScreenScraper (needs software credentials, optionally your account) and SteamGridDB (art; needs a key). Results never overwrite what someone wrote, except on a draft (a game imported but not yet checked), whose
 //! placeholder fields are replaced. Images are only downloaded from the providers' own image hosts, at most 10 MB each.
 #![cfg_attr(not(feature = "scrape"), allow(dead_code))] // without online lookups the helpers are compiled but unused
 
@@ -25,17 +25,23 @@ pub trait Provider: Send + Sync {
     fn find(&self, game: &Json) -> Result<Found, String>;
 }
 
-pub const IMAGE_HOSTS: [&str; 6] = [
+pub const IMAGE_HOSTS: [&str; 7] = [
     "shared.cloudflare.steamstatic.com",
     "cdn.cloudflare.steamstatic.com",
     "shared.akamai.steamstatic.com",
     "cdn.akamai.steamstatic.com",
     "cdn2.steamgriddb.com",
     "cdn.steamgriddb.com",
+    "cdn.thegamesdb.net",
 ];
 
+/// ScreenScraper serves media from several mirrors under its own domain.
+const IMAGE_DOMAINS: [&str; 1] = ["screenscraper.fr"];
+
 pub fn host_ok(url: &str) -> bool {
-    url.strip_prefix("https://").and_then(|r| r.split('/').next()).is_some_and(|h| IMAGE_HOSTS.contains(&h))
+    url.strip_prefix("https://")
+        .and_then(|r| r.split(['/', '?']).next())
+        .is_some_and(|h| IMAGE_HOSTS.contains(&h) || IMAGE_DOMAINS.iter().any(|d| h == *d || h.ends_with(&format!(".{d}"))))
 }
 
 /// Plain text from Steam's HTML-ish descriptions.
@@ -334,8 +340,238 @@ impl Provider for SteamGridDb {
     }
 }
 
+/// The best match for a title among a provider's search results: an exact match (ignoring case and punctuation), else one that
+/// starts the same way, else nothing (a wrong game's art is worse than none).
+fn best_match<'a>(items: &'a [Value], title: &str, name_of: impl Fn(&Value) -> String) -> Option<&'a Value> {
+    let want = norm(title);
+    items.iter().find(|i| norm(&name_of(i)) == want).or_else(|| {
+        items.iter().find(|i| {
+            let n = norm(&name_of(i));
+            !want.is_empty() && !n.is_empty() && (n.starts_with(&want) || want.starts_with(&n))
+        })
+    })
+}
+
+fn players_patch(n: i64) -> Option<String> {
+    (1..=99).contains(&n).then(|| if n == 1 { "1".to_string() } else { format!("1-{n}") })
+}
+
+/// TheGamesDB: a game from `data.games[]` plus the `include.boxart` block of the same reply, and optionally the screenshot block
+/// of a `Games/Images` reply (`data.base_url`, `data.images[id][]`).
+pub fn from_thegamesdb(g: &Value, boxart: &Value, images: Option<&Value>) -> Found {
+    let id = g["id"].as_u64().unwrap_or(0);
+    let key = id.to_string();
+    let mut info = Map::new();
+    if let Some(y) = s(g, "release_date").get(..4).and_then(|y| y.parse::<i64>().ok()).filter(|y| (1970..=2100).contains(y)) {
+        info.insert("year".into(), json!(y));
+    }
+    let overview: String = plain(s(g, "overview")).chars().take(400).collect();
+    if !overview.is_empty() {
+        info.insert("summary".into(), json!(overview));
+    }
+    info.insert("asOf".into(), json!(crate::util::today()));
+    info.insert("sources".into(), json!([format!("https://thegamesdb.net/game.php?id={id}")]));
+    let mut patch = Map::new();
+    patch.insert("info".into(), Value::Object(info));
+    if !overview.is_empty() && crate::catalog::tone_issues(&overview).is_empty() {
+        patch.insert("why".into(), json!(overview.chars().take(300).collect::<String>()));
+    }
+    if let Some(p) = g["players"].as_i64().and_then(players_patch) {
+        patch.insert("suggest:p".into(), json!(p));
+        if p == "1" {
+            patch.insert("suggest:one".into(), json!(true));
+        }
+    }
+    let mut out = vec![];
+    let base = |b: &Value| s(&b["base_url"], "original").to_string();
+    if let Some(front) = boxart["data"][&key].as_array().and_then(|a| a.iter().find(|x| s(x, "type") == "boxart" && s(x, "side") == "front")) {
+        out.push(("cover".to_string(), format!("{}{}", base(boxart), s(front, "filename"))));
+    }
+    if let Some(img) = images {
+        let list = img["images"][&key].as_array().cloned().unwrap_or_default();
+        if let Some(x) = list.iter().find(|x| s(x, "type") == "screenshot").or_else(|| list.iter().find(|x| s(x, "type") == "fanart")) {
+            out.push(("shot".to_string(), format!("{}{}", base(img), s(x, "filename"))));
+        }
+    }
+    Found { patch, images: out, source: "TheGamesDB".into() }
+}
+
+/// The text for a region or language from ScreenScraper's lists of `{region|langue, text}`, preferring the given codes in order.
+fn ss_pick(list: &Value, key: &str, prefer: &[&str]) -> String {
+    let items = list.as_array().cloned().unwrap_or_default();
+    prefer.iter().find_map(|p| items.iter().find(|x| s(x, key) == *p)).or(items.first()).map(|x| s(x, "text").to_string()).unwrap_or_default()
+}
+
+/// ScreenScraper: one `jeu` from jeuInfos or jeuRecherche (JSON output).
+pub fn from_screenscraper(j: &Value) -> Found {
+    let id = j["id"].as_str().map(String::from).or_else(|| j["id"].as_u64().map(|x| x.to_string())).unwrap_or_default();
+    let mut info = Map::new();
+    let date = ss_pick(&j["dates"], "region", &["wor", "us", "eu", "jp", "ss"]);
+    if let Some(y) = date.get(..4).and_then(|y| y.parse::<i64>().ok()).filter(|y| (1970..=2100).contains(y)) {
+        info.insert("year".into(), json!(y));
+    }
+    for (k, src) in [("developer", "developpeur"), ("publisher", "editeur")] {
+        let v: String = s(&j[src], "text").chars().take(80).collect();
+        if !v.trim().is_empty() {
+            info.insert(k.into(), json!(v));
+        }
+    }
+    let genres: Vec<String> = j["genres"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|g| ss_pick(&g["noms"], "langue", &["en"]).to_lowercase())
+        .filter(|g| !g.is_empty())
+        .map(|g| g.chars().take(40).collect())
+        .take(8)
+        .collect();
+    if !genres.is_empty() {
+        info.insert("genres".into(), json!(genres));
+    }
+    let synopsis: String = plain(&ss_pick(&j["synopsis"], "langue", &["en"])).chars().take(400).collect();
+    if !synopsis.is_empty() {
+        info.insert("summary".into(), json!(synopsis));
+    }
+    info.insert("asOf".into(), json!(crate::util::today()));
+    if !id.is_empty() {
+        info.insert("sources".into(), json!([format!("https://www.screenscraper.fr/gameinfos.php?gameid={id}")]));
+    }
+    let mut patch = Map::new();
+    patch.insert("info".into(), Value::Object(info));
+    if !synopsis.is_empty() && crate::catalog::tone_issues(&synopsis).is_empty() {
+        patch.insert("why".into(), json!(synopsis.chars().take(300).collect::<String>()));
+    }
+    let players = s(&j["joueurs"], "text");
+    if let Some(p) = players.split(['-', ' ']).filter_map(|x| x.trim().parse::<i64>().ok()).max().and_then(players_patch) {
+        patch.insert("suggest:p".into(), json!(p));
+    }
+    let medias = j["medias"].as_array().cloned().unwrap_or_default();
+    let media = |types: &[&str]| -> Option<String> {
+        for t in types {
+            let of: Vec<&Value> = medias.iter().filter(|m| s(m, "type") == *t).collect();
+            if let Some(m) = ["us", "wor", "eu", "ss", "jp"].iter().find_map(|r| of.iter().find(|m| s(m, "region") == *r)).or(of.first()) {
+                return Some(s(m, "url").to_string());
+            }
+        }
+        None
+    };
+    let mut images = vec![];
+    if let Some(u) = media(&["box-2D", "box-3D", "mixrbv1"]) {
+        images.push(("cover".to_string(), u));
+    }
+    if let Some(u) = media(&["ss", "sstitle", "fanart"]) {
+        images.push(("shot".to_string(), u));
+    }
+    images.retain(|(_, u)| host_ok(u));
+    Found { patch, images, source: "ScreenScraper".into() }
+}
+
+fn net_off() -> Option<String> {
+    (!cfg!(feature = "scrape")).then(|| "this build was made without online lookups".to_string())
+}
+
+pub struct TheGamesDb {
+    pub key: String,
+}
+
+impl Provider for TheGamesDb {
+    fn id(&self) -> &'static str {
+        "thegamesdb"
+    }
+    fn label(&self) -> &'static str {
+        "TheGamesDB"
+    }
+    fn unavailable(&self) -> Option<String> {
+        net_off().or_else(|| self.key.is_empty().then(|| "add a TheGamesDB API key in Settings".into()))
+    }
+    #[cfg(not(feature = "scrape"))]
+    fn find(&self, _: &Json) -> Result<Found, String> {
+        Err("this build was made without online lookups".into())
+    }
+    #[cfg(feature = "scrape")]
+    fn find(&self, game: &Json) -> Result<Found, String> {
+        if let Some(why) = self.unavailable() {
+            return Err(why);
+        }
+        let base = "https://api.thegamesdb.net/v1";
+        let r = net::get_json(
+            &format!("{base}/Games/ByGameName?apikey={}&name={}&fields=players,overview&include=boxart", net::enc(&self.key), net::enc(s(game, "t"))),
+            None,
+        )?;
+        let games = r["data"]["games"].as_array().cloned().unwrap_or_default();
+        let g = best_match(&games, s(game, "t"), |x| s(x, "game_title").to_string()).ok_or("not found on TheGamesDB")?;
+        let id = g["id"].as_u64().unwrap_or(0);
+        let shots = net::get_json(&format!("{base}/Games/Images?apikey={}&games_id={id}&filter%5Btype%5D=screenshot,fanart", net::enc(&self.key)), None).ok();
+        Ok(from_thegamesdb(g, &r["include"]["boxart"], shots.as_ref().map(|x| &x["data"])))
+    }
+}
+
+/// ScreenScraper needs credentials for the software itself (a developer id and password, requested on screenscraper.fr's forum)
+/// and, optionally, your own account, which raises your daily quota.
+pub struct ScreenScraper {
+    pub dev_id: String,
+    pub dev_password: String,
+    pub user: String,
+    pub password: String,
+}
+
+impl Provider for ScreenScraper {
+    fn id(&self) -> &'static str {
+        "screenscraper"
+    }
+    fn label(&self) -> &'static str {
+        "ScreenScraper"
+    }
+    fn unavailable(&self) -> Option<String> {
+        net_off().or_else(|| (self.dev_id.is_empty() || self.dev_password.is_empty()).then(|| "add ScreenScraper software credentials in Settings".into()))
+    }
+    #[cfg(not(feature = "scrape"))]
+    fn find(&self, _: &Json) -> Result<Found, String> {
+        Err("this build was made without online lookups".into())
+    }
+    #[cfg(feature = "scrape")]
+    fn find(&self, game: &Json) -> Result<Found, String> {
+        if let Some(why) = self.unavailable() {
+            return Err(why);
+        }
+        let mut url = format!(
+            "https://www.screenscraper.fr/api2/jeuRecherche.php?devid={}&devpassword={}&softname=GameNight&output=json&recherche={}",
+            net::enc(&self.dev_id),
+            net::enc(&self.dev_password),
+            net::enc(s(game, "t"))
+        );
+        if !self.user.is_empty() {
+            url.push_str(&format!("&ssid={}&sspassword={}", net::enc(&self.user), net::enc(&self.password)));
+        }
+        let r = net::get_json(&url, None).map_err(|e| {
+            let code = ["401", "423", "426", "429", "430", "431"].into_iter().find(|c| e.contains(c));
+            match code {
+                Some("401") | Some("423") => "ScreenScraper is closed to lookups right now (busy or members only); try again later".to_string(),
+                Some("426") => "ScreenScraper refused this version of Game Night".to_string(),
+                Some("429") => "ScreenScraper asked to slow down; try again in a minute".to_string(),
+                Some("430") | Some("431") => "today's ScreenScraper quota is used up".to_string(),
+                _ => e,
+            }
+        })?;
+        let jeux: Vec<Value> = r["response"]["jeux"].as_array().cloned().unwrap_or_default().into_iter().filter(|j| !j["id"].is_null()).collect();
+        let j = best_match(&jeux, s(game, "t"), |j| ss_pick(&j["noms"], "region", &["wor", "us", "eu", "ss"])).ok_or("not found on ScreenScraper")?;
+        Ok(from_screenscraper(j))
+    }
+}
+
+/// Every source, in the order Look it up tries them: Steam first (no key), then the keyed ones.
 pub fn providers(settings: &crate::config::Settings) -> Vec<Box<dyn Provider>> {
-    vec![Box::new(SteamStore), Box::new(SteamGridDb { key: settings.steamgriddb_key.clone() })]
+    vec![
+        Box::new(SteamStore),
+        Box::new(TheGamesDb { key: settings.thegamesdb_key.clone() }),
+        Box::new(ScreenScraper {
+            dev_id: settings.screenscraper_dev_id.clone(),
+            dev_password: settings.screenscraper_dev_password.clone(),
+            user: settings.screenscraper_user.clone(),
+            password: settings.screenscraper_password.clone(),
+        }),
+        Box::new(SteamGridDb { key: settings.steamgriddb_key.clone() }),
+    ]
 }
 
 #[cfg(test)]
@@ -374,7 +610,68 @@ mod tests {
     }
 
     #[test]
+    fn thegamesdb_replies_become_valid_info_and_art() {
+        let reply = json!({"data": {"games": [
+            {"id": 7, "game_title": "Overcooked! 2", "release_date": "2018-08-07", "players": 4, "overview": "Chaotic &amp; co-operative cooking."},
+            {"id": 8, "game_title": "Overcooked", "release_date": "2016-08-02", "players": 4, "overview": "x"}]},
+            "include": {"boxart": {"base_url": {"original": "https://cdn.thegamesdb.net/images/original/"}, "data": {"7": [
+                {"type": "boxart", "side": "back", "filename": "boxart/back/7-1.jpg"}, {"type": "boxart", "side": "front", "filename": "boxart/front/7-1.jpg"}]}}}});
+        let games = reply["data"]["games"].as_array().unwrap().clone();
+        let g = best_match(&games, "Overcooked 2", |x| s(x, "game_title").to_string()).unwrap();
+        assert_eq!(g["id"], 7, "punctuation doesn't matter, and the closer title wins");
+        let shots = json!({"base_url": {"original": "https://cdn.thegamesdb.net/images/original/"}, "images": {"7": [{"type": "fanart", "filename": "fanart/7-1.jpg"}, {"type": "screenshot", "filename": "screenshots/7-1.jpg"}]}});
+        let f = from_thegamesdb(g, &reply["include"]["boxart"], Some(&shots));
+        assert!(crate::catalog::info_issues(&f.patch["info"]).is_empty());
+        assert_eq!(f.patch["info"]["year"], 2018);
+        assert_eq!(s(&Value::Object(f.patch.clone()), "why"), "Chaotic & co-operative cooking.");
+        assert_eq!(f.patch["suggest:p"], "1-4");
+        assert_eq!(
+            f.images,
+            vec![
+                ("cover".to_string(), "https://cdn.thegamesdb.net/images/original/boxart/front/7-1.jpg".to_string()),
+                ("shot".to_string(), "https://cdn.thegamesdb.net/images/original/screenshots/7-1.jpg".to_string())
+            ]
+        );
+        assert!(f.images.iter().all(|(_, u)| host_ok(u)));
+        assert!(best_match(&games, "Completely Different", |x| s(x, "game_title").to_string()).is_none(), "no match beats a wrong match");
+    }
+
+    #[test]
+    fn screenscraper_games_become_valid_info_and_art() {
+        let j = json!({"id": "3410", "noms": [{"region": "jp", "text": "Mario Kart 8 DX"}, {"region": "wor", "text": "Mario Kart 8 Deluxe"}],
+            "synopsis": [{"langue": "fr", "text": "Course"}, {"langue": "en", "text": "Race with up to four friends."}],
+            "dates": [{"region": "us", "text": "2017-04-28"}], "developpeur": {"id": "1", "text": "Nintendo EPD"}, "editeur": {"id": "2", "text": "Nintendo"},
+            "joueurs": {"text": "1-4"}, "genres": [{"noms": [{"langue": "fr", "text": "Course"}, {"langue": "en", "text": "Racing"}]}],
+            "medias": [{"type": "box-2D", "region": "jp", "url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?x=jp"}, {"type": "box-2D", "region": "us", "url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?x=us"},
+                       {"type": "ss", "region": "wor", "url": "https://www.screenscraper.fr/api2/mediaJeu.php?x=ss"}, {"type": "video", "url": "https://evil.example/x.mp4"}]});
+        assert_eq!(ss_pick(&j["noms"], "region", &["wor", "us"]), "Mario Kart 8 Deluxe");
+        let f = from_screenscraper(&j);
+        assert!(crate::catalog::info_issues(&f.patch["info"]).is_empty(), "{:?}", crate::catalog::info_issues(&f.patch["info"]));
+        let info = &f.patch["info"];
+        assert_eq!((info["year"].as_i64(), s(info, "developer"), s(info, "publisher")), (Some(2017), "Nintendo EPD", "Nintendo"));
+        assert_eq!(info["genres"], json!(["racing"]));
+        assert_eq!(f.patch["suggest:p"], "1-4");
+        assert_eq!(f.images[0].1, "https://neoclone.screenscraper.fr/api2/mediaJeu.php?x=us", "the US box comes first");
+        assert_eq!(f.images[1].0, "shot");
+        assert!(f.images.iter().all(|(_, u)| host_ok(u)));
+    }
+
+    #[test]
+    fn every_provider_says_why_it_cannot_run_without_keys() {
+        let all = providers(&crate::config::Settings::default());
+        assert_eq!(all.iter().map(|p| p.id()).collect::<Vec<_>>(), vec!["steam", "thegamesdb", "screenscraper", "steamgriddb"]);
+        for p in &all[1..] {
+            assert!(p.unavailable().is_some(), "{} needs a key", p.id());
+        }
+    }
+
+    #[test]
     fn only_known_image_hosts() {
+        assert!(host_ok("https://neoclone.screenscraper.fr/api2/mediaJeu.php?a=1"));
+        assert!(host_ok("https://screenscraper.fr/x.png"));
+        assert!(!host_ok("https://screenscraper.fr.evil.example/x.png"));
+        assert!(!host_ok("https://evilscreenscraper.fr/x.png"));
+        assert!(host_ok("https://cdn.thegamesdb.net/images/original/x.jpg"));
         assert!(host_ok("https://cdn2.steamgriddb.com/grid/x.png"));
         assert!(!host_ok("http://cdn2.steamgriddb.com/grid/x.png"));
         assert!(!host_ok("https://evil.example/cdn2.steamgriddb.com/x.png"));

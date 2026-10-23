@@ -182,6 +182,7 @@ fn post(app: &App, path: &str, d: &Value) -> Result<Json, (u16, String)> {
         "/api/settings" => app.save_settings(d),
         "/api/import" => app.import(d),
         "/api/sample" => app.add_sample(),
+        "/api/pick-folder" => app.pick_folder(s(d, "title"), s(d, "start")),
         "/api/library/import" => app.import_library(d.get("picks").unwrap_or(&json!([]))),
         "/api/scrape" => app.scrape(t, s(d, "provider"), d.get("forceArt").and_then(Value::as_bool).unwrap_or(false)),
         "/api/refresh" => {
@@ -208,6 +209,7 @@ fn get(app: &App, path: &str, qs: &[(String, String)]) -> Option<Result<Json, St
         "/api/year" => app.year(q(qs, "y").parse().ok()),
         "/api/library" => app.library(),
         "/api/providers" => app.providers(),
+        "/api/folder-suggestions" => app.folder_suggestions(),
         _ => return None,
     })
 }

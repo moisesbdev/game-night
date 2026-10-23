@@ -5,7 +5,9 @@
 You've got a few hundred games between you and an evening together, and twenty minutes go by scrolling. Game Night picks one, shows you why, and remembers how the night went. It brings in your Steam library and any game folders, works with a controller from the sofa, and runs on your own computer: one small program, no account, no cloud.
 
 - **Made for the people on the couch.** Set up the group once: a couple, a few friends, a housemate who drops by, up to eight. Everyone's marks count, the pick goes round the room, and anyone can say "not for us".
-- **Your Steam library, in one tap.** Game Night finds Steam on its own (Windows, Linux, Flatpak, macOS), lists what's installed and adds what you pick. Play starts the game through Steam. Game folders (shortcuts, programs, `.desktop` files, AppImages) work the same way, and console games can sit on the shelf too: they're drawn, you just press start yourself.
+- **Your Steam library, in one tap.** Game Night finds Steam on its own: the registry and the usual places, plus a look at every drive for Steam libraries (Windows, Linux native/Flatpak/Snap and macOS). It lists what's installed and adds what you pick, and Play starts the game through Steam.
+- **Your other games, without typing paths.** Settings suggests the folders on your drives that hold games (Epic, GOG, Xbox app, EA, Ubisoft, Riot, your Desktop's shortcuts, `~/Games`, Heroic), each with how many it found, one tap to add, or **Browse...** with your system's own folder picker. Console games can sit on the shelf too: they're drawn, you just press start yourself.
+- **Box art and details from four sources.** **Look it up** tries the Steam store (no account needed), TheGamesDB and ScreenScraper (consoles and retro games) and SteamGridDB (more art), in that order, filling only what's missing.
 - **Fair, and it shows its work.** The pick is a weighted draw from your operating system's secure random source. Loved games come up more, recently played ones rest, one-player games are rarer unless you ask for them, and "Why this one?" shows the real odds and the reasons. Statistics tests check the reported odds against tens of thousands of draws.
 - **One question on screen.** "What shall we play?", one big button, and nine one-tap feelings: cozy, a quick round, all of us, silly, a little spooky, a little rivalry, something new to us, one controller, a proper evening. Filters, three cards to strike from, an evening plan, a coin toss and a quick taste test are one tap away.
 - **Watch before you commit.** Your own preview videos, or the game's trailer and a couch co-op clip from YouTube, only when you press, always muted.
@@ -28,7 +30,7 @@ Start it with `--browser` to use your usual browser instead of its own window, o
 ## Your first evening
 
 1. **More > Settings > Who's playing**: type your names. Two for a couple, more for friends.
-2. **Shelf > Add from library**: tick the games you'd play together and press **Add and look them up**. Details and box art come from the Steam store's public pages. Prefer to start small? The empty shelf offers twenty well-known games to try the picker with.
+2. **Shelf > Add from library**: tick the games you'd play together and press **Add and look them up**. Steam is found by itself; for other games, add the folders Settings suggests (or Browse to one). Prefer to start small? The empty shelf offers twenty well-known games to try the picker with.
 3. **Tonight**: press **Surprise us**, or pick a feeling. "We'll play this" passes the pick to the next person.
 
 New games arrive marked "to check", and they're drawn straight away. Open one and press **Edit** to say how it plays together: on one couch or online, how many players, and how much skill matters.
@@ -53,7 +55,7 @@ The names that flick past and the wheel are decoration. The winner is drawn firs
 ## Privacy and safety
 
 - It listens on `127.0.0.1` only. Every request must come from the page it served (Host and Origin checks, a per-run token for every change, size limits, a strict content security policy).
-- It goes online only when you press **Trailer** (a muted, sandboxed `youtube-nocookie.com` frame) or **Look it up** (the Steam store's public pages, and SteamGridDB if you add a key). Switch trailers off in Settings and it never contacts YouTube.
+- It goes online only when you press **Trailer** (a muted, sandboxed `youtube-nocookie.com` frame) or **Look it up** (the Steam store's public pages, plus TheGamesDB, ScreenScraper and SteamGridDB once you add their keys). Switch trailers off in Settings and it never contacts YouTube. Images are only downloaded from those services' own image hosts.
 - Play starts only games on your shelf, only the way their entry says: a Steam app id, a known launcher link (`steam://`, `heroic://`, `lutris:`, `itch://`, Epic, GOG, Ubisoft), a shortcut file, or a program run directly, never through a shell. Settings can switch Play off.
 - Nothing about any one household is built in: no names, drives or folders.
 
@@ -65,6 +67,17 @@ Everything lives in one folder: `%APPDATA%\GameNight` on Windows, `~/.local/shar
 - `state.json` holds marks, history and whose pick it is, with a daily backup (ten kept).
 - `sessions.json` holds play sessions; `settings.json` holds settings; `media/` holds art saved by **Look it up**.
 - Settings > Export makes one file with all of it; Import brings it back on another computer.
+
+### Lookup sources
+
+| Source | Needs | Good for |
+|---|---|---|
+| Steam store | nothing | PC games on Steam: details, box art, screenshots, how it's played together |
+| TheGamesDB | a free API key (request on forums.thegamesdb.net) | consoles and older games |
+| ScreenScraper | software credentials (request on the screenscraper.fr forum) and, optionally, your account for a bigger daily quota | the widest console and retro coverage |
+| SteamGridDB | a free API key (steamgriddb.com, Preferences > API) | extra box art |
+
+Keys are entered in Settings and stay in your data folder. A source that isn't set up is simply skipped.
 
 ### Art you already have
 

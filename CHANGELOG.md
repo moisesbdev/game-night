@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Steam is found on any drive.** Besides the registry and the usual places, every connected drive (and /mnt, /media, /run/media, /Volumes) is checked for Steam libraries, including ones Steam's own list doesn't mention and second installs. Looked up at most once a minute.
+- **Game folders without typing paths.** Settings lists folders on your drives that hold games (Epic, GOG, Xbox app, EA, Ubisoft, Riot, the Desktop's shortcuts, ~/Games, Heroic), each with how many games it found, one tap to add; **Browse...** opens the system's folder picker (Windows and macOS; zenity or kdialog on Linux). Art folders and the Steam folder have Browse too.
+- **TheGamesDB and ScreenScraper** join the Steam store and SteamGridDB as lookup sources. Look it up and "Add and look them up" try every source that's set up, in order, each filling only what's missing. Keys never go back to the page.
+
 ## 1.0.0
 
 The first public release: Game Night as one small program for Windows, Linux and macOS.

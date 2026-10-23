@@ -117,9 +117,130 @@ pub fn scan(dirs: &[String]) -> Vec<FoundGame> {
     out
 }
 
+/// Every connected drive or mount to look at: drive letters C: to Z: on Windows; the home folder and anything under /mnt, /media,
+/// /run/media on Linux; /Volumes on macOS. Only existence is checked, nothing is read.
+pub fn drives() -> Vec<PathBuf> {
+    let mut out = vec![];
+    if cfg!(windows) {
+        for l in b'C'..=b'Z' {
+            let p = PathBuf::from(format!("{}:\\", l as char));
+            if p.is_dir() {
+                out.push(p);
+            }
+        }
+        return out;
+    }
+    let kids = |p: &Path| -> Vec<PathBuf> { fs::read_dir(p).map(|rd| rd.flatten().map(|e| e.path()).filter(|x| x.is_dir()).collect()).unwrap_or_default() };
+    if let Some(h) = std::env::var_os("HOME") {
+        out.push(PathBuf::from(h));
+    }
+    if cfg!(target_os = "macos") {
+        out.extend(kids(Path::new("/Volumes")));
+    } else {
+        out.extend(kids(Path::new("/mnt")));
+        for base in ["/media", "/run/media"] {
+            for user_or_disk in kids(Path::new(base)) {
+                out.push(user_or_disk.clone());
+                out.extend(kids(&user_or_disk));
+            }
+        }
+    }
+    out.dedup();
+    out
+}
+
+/// `base` + "a/b/c" with the system's own separators (so a Windows path never shows as `C:\Games/Steam`).
+pub fn join_rel(base: &Path, rel: &str) -> PathBuf {
+    rel.split('/').fold(base.to_path_buf(), |p, part| p.join(part))
+}
+
+/// Folders where launchers and people usually keep games, relative to a drive (Windows) or the home folder (Linux, macOS).
+const LIKELY: [&str; 14] = [
+    "Games",
+    "Epic Games",
+    "Program Files/Epic Games",
+    "GOG Games",
+    "Program Files (x86)/GOG Galaxy/Games",
+    "Program Files/GOG Galaxy/Games",
+    "XboxGames",
+    "Program Files/EA Games",
+    "EA Games",
+    "Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games",
+    "Riot Games",
+    "Games/Heroic",
+    "Applications",
+    "itch",
+];
+
+/// Folders on this computer that look like they hold games, each with how many it found, for one-tap adding in Settings.
+/// Skips folders already chosen and Steam's own folders (the Steam import covers those).
+pub fn suggest(already: &[String]) -> Vec<(PathBuf, usize)> {
+    let mut places: Vec<PathBuf> = drives().iter().flat_map(|d| LIKELY.iter().map(move |l| join_rel(d, l))).collect();
+    if let Some(home) = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from) {
+        for d in ["Desktop", "Desktop/Games", "OneDrive/Desktop", "OneDrive/Desktop/Games", "Games", "Applications"] {
+            places.push(join_rel(&home, d));
+        }
+    }
+    let chosen: Vec<PathBuf> = already.iter().map(|a| PathBuf::from(a.trim())).collect();
+    let same = |a: &Path, b: &Path| a.canonicalize().ok().zip(b.canonicalize().ok()).is_some_and(|(x, y)| x == y);
+    let mut out: Vec<(PathBuf, usize)> = vec![];
+    for p in places {
+        if !p.is_dir() || chosen.iter().any(|c| same(c, &p)) || out.iter().any(|(o, _)| same(o, &p)) || p.join("steamapps").exists() {
+            continue;
+        }
+        let n = scan(&[p.to_string_lossy().into()]).len();
+        if n > 0 {
+            out.push((p, n));
+        }
+    }
+    out
+}
+
+/// Ask the person to choose a folder with the system's own picker. None when cancelled or when this system has no picker
+/// (Linux without zenity or kdialog, or a build without a window).
+pub fn pick_folder(title: &str, start: Option<&str>) -> Option<String> {
+    #[cfg(all(feature = "window", any(windows, target_os = "macos")))]
+    {
+        let mut d = rfd::FileDialog::new().set_title(title);
+        if let Some(s) = start.filter(|s| Path::new(s).is_dir()) {
+            d = d.set_directory(s);
+        }
+        d.pick_folder().map(|p| p.to_string_lossy().into_owned())
+    }
+    #[cfg(not(all(feature = "window", any(windows, target_os = "macos"))))]
+    {
+        if cfg!(windows) || cfg!(target_os = "macos") {
+            return None;
+        }
+        let start = start.filter(|s| Path::new(s).is_dir()).map(|s| format!("{}/", s.trim_end_matches('/')));
+        let tries: [(&str, Vec<String>); 2] = [
+            (
+                "zenity",
+                [vec!["--file-selection".into(), "--directory".into(), format!("--title={title}")], start.iter().map(|s| format!("--filename={s}")).collect()]
+                    .concat(),
+            ),
+            ("kdialog", [vec!["--getexistingdirectory".into(), start.clone().unwrap_or_else(|| ".".into())], vec!["--title".into(), title.into()]].concat()),
+        ];
+        for (prog, args) in tries {
+            if let Ok(o) = std::process::Command::new(prog).args(&args).output() {
+                let p = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                return (o.status.success() && !p.is_empty()).then_some(p);
+            }
+        }
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn drives_are_real_folders() {
+        let d = drives();
+        assert!(!d.is_empty());
+        assert!(d.iter().all(|p| p.is_dir()));
+    }
 
     #[test]
     fn finds_shortcuts_and_game_folders_but_not_installers() {

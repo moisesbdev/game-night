@@ -1,6 +1,6 @@
 /* The Shelf's other two sections: adding games from your library (Steam and game folders), and the wishlist. */
 import { S, api, chip, h, mascot, poster, reload, toast } from "./core.js";
-import { editGame } from "./games.js";
+import { editGame, lookUpAll, lookupSources } from "./games.js";
 import { go, render } from "./main.js";
 
 /** The latest price check, if one was recorded: "Lowest $19.99 at the eShop · usually $39.99 · checked 2026-10-22". */
@@ -76,9 +76,9 @@ export async function librarySection() {
       status.textContent = "Added " + r.added + " to the shelf." + (r.refused.length ? " Not added: " + r.refused.join("; ") : "");
       await reload();
       if (lookup && S.boot.scrape) {
-        const drafts = S.boot.games.filter(g => g.draft);
+        const drafts = S.boot.games.filter(g => g.draft), sources = await lookupSources();
         let n = 0;
-        for (const g of drafts) { status.textContent = "Looking up " + (++n) + " of " + drafts.length + ": " + g.t; try { await api("/api/scrape", { title: g.t, provider: "steam" }); } catch (e) { /* not on the Steam store: it stays a draft to fill in by hand */ } }
+        for (const g of drafts) { status.textContent = "Looking up " + (++n) + " of " + drafts.length + ": " + g.t; await lookUpAll(g.t, sources); }      // a game no source knows stays a draft to fill in by hand
         await reload();
         status.textContent = "Added " + r.added + " and looked up " + drafts.length + ". Games marked \"to check\" still need a look.";
       }
@@ -92,5 +92,5 @@ export async function librarySection() {
     h("div", { class: "row" }, S.boot.scrape ? h("button", { class: "btn primary", type: "button", onclick: () => add(true) }, "Add and look them up") : null,
       h("button", { class: "btn" + (S.boot.scrape ? "" : " primary"), type: "button", onclick: () => add(false) }, "Add"), h("button", { class: "link", type: "button", onclick: () => go("more", "settings") }, "Folders and Steam settings")),
     status,
-    S.boot.scrape ? h("p", { class: "small" }, "Looking up uses the Steam store's public pages (no account) for details and box art, and only when you press it.") : null);
+    S.boot.scrape ? h("p", { class: "small" }, "Looking up uses the Steam store's public pages (no account), plus TheGamesDB, ScreenScraper and SteamGridDB when you've added their keys in Settings, and only when you press it.") : null);
 }

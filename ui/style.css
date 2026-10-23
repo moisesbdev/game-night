@@ -510,3 +510,10 @@ body.halloween{
 .libpick .small{overflow-wrap:anywhere}
 .players .row input[type=text]{flex:1 1 200px;max-width:320px}
 .link.danger{color:var(--bad)}
+
+/* Settings: game folders, the ones found on this computer, and lookup keys */
+.folderlist{list-style:none;margin:.4rem 0;padding:0;display:grid;gap:6px}
+.folderlist li{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card2)}
+.folderlist .path{flex:1 1 260px;font-family:ui-monospace,Consolas,monospace;font-size:.9rem;overflow-wrap:anywhere}
+.folders .row input[type=text]{flex:1 1 260px}
+.found{margin-top:.6rem}

@@ -46,6 +46,13 @@ pub struct Settings {
     pub steam_dir: String,
     /// Optional key for SteamGridDB artwork (https://www.steamgriddb.com/profile/preferences/api).
     pub steamgriddb_key: String,
+    /// TheGamesDB API key (requested on forums.thegamesdb.net).
+    pub thegamesdb_key: String,
+    /// ScreenScraper software credentials (requested on screenscraper.fr's forum) and, optionally, your own account.
+    pub screenscraper_dev_id: String,
+    pub screenscraper_dev_password: String,
+    pub screenscraper_user: String,
+    pub screenscraper_password: String,
 }
 
 impl Default for Settings {
@@ -61,6 +68,11 @@ impl Default for Settings {
             game_dirs: vec![],
             steam_dir: String::new(),
             steamgriddb_key: String::new(),
+            thegamesdb_key: String::new(),
+            screenscraper_dev_id: String::new(),
+            screenscraper_dev_password: String::new(),
+            screenscraper_user: String::new(),
+            screenscraper_password: String::new(),
         }
     }
 }
@@ -97,6 +109,10 @@ impl Settings {
         self.game_dirs = self.game_dirs.iter().map(|d| d.trim().to_string()).filter(|d| !d.is_empty() && d.len() <= 400).take(20).collect();
         self.media_dirs.retain(|m| !m.path.trim().is_empty() && matches!(m.layout.as_str(), "slug" | "esde"));
         self.steamgriddb_key = self.steamgriddb_key.trim().chars().filter(|c| c.is_ascii_alphanumeric()).take(64).collect();
+        self.thegamesdb_key = self.thegamesdb_key.trim().chars().filter(|c| c.is_ascii_alphanumeric()).take(128).collect();
+        for v in [&mut self.screenscraper_dev_id, &mut self.screenscraper_dev_password, &mut self.screenscraper_user, &mut self.screenscraper_password] {
+            *v = v.trim().chars().filter(|c| !c.is_control()).take(100).collect();
+        }
         self
     }
 }

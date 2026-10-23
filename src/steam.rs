@@ -146,8 +146,69 @@ fn registry_paths() -> Vec<PathBuf> {
     out
 }
 
-pub fn find_root(custom: &str) -> Option<PathBuf> {
-    candidates(custom).into_iter().find(|p| p.join("steamapps").is_dir())
+/// Folder names Steam libraries usually get on a drive's top level (and one level down, under Games).
+const LIBRARY_NAMES: [&str; 9] = [
+    "SteamLibrary",
+    "Steam",
+    "Steam Library",
+    "steam",
+    "Program Files (x86)/Steam",
+    "Program Files/Steam",
+    "Games/Steam",
+    "Games/SteamLibrary",
+    "Games/Steam Library",
+];
+
+/// Every Steam install and library on this computer: the installs Steam knows about (Settings, the registry, the usual places),
+/// the libraries their `libraryfolders.vdf` lists, and library folders found on any connected drive that Steam's list doesn't mention
+/// (a drive moved from another PC, or a second install). Nothing is written; only folder names are checked.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Discovery {
+    /// Installs (have `steamapps` and are where Steam itself lives): used for Steam's cached art.
+    pub roots: Vec<PathBuf>,
+    /// Every library folder (has `steamapps`), with how it was found: "steam" (listed by Steam) or "drive" (found by looking).
+    pub libraries: Vec<(PathBuf, &'static str)>,
+}
+
+pub fn discover(custom: &str) -> Discovery {
+    let mut d = Discovery::default();
+    for c in candidates(custom) {
+        if c.join("steamapps").is_dir() && !d.roots.iter().any(|r| same(r, &c)) {
+            d.roots.push(c);
+        }
+    }
+    for drive in crate::folders::drives() {
+        for p in libraries_on(&drive) {
+            {
+                let is_install = p.join("steam.exe").exists() || p.join("steam.sh").exists();
+                if is_install && p.join("steamapps").join("libraryfolders.vdf").is_file() && !d.roots.iter().any(|r| same(r, &p)) {
+                    d.roots.push(p.clone()); // a second Steam install on another drive
+                }
+                if !d.libraries.iter().any(|(l, _)| same(l, &p)) {
+                    d.libraries.push((p, "drive"));
+                }
+            }
+        }
+    }
+    for r in d.roots.clone() {
+        for l in libraries(&r) {
+            match d.libraries.iter_mut().find(|(x, _)| same(x, &l)) {
+                Some(e) => e.1 = "steam",
+                None => d.libraries.push((l, "steam")),
+            }
+        }
+    }
+    d.libraries.retain(|(l, _)| has_manifests(l));
+    d
+}
+
+/// Steam library folders at the usual places on one drive (or mount).
+pub fn libraries_on(drive: &Path) -> Vec<PathBuf> {
+    LIBRARY_NAMES.iter().map(|n| crate::folders::join_rel(drive, n)).filter(|p| p.join("steamapps").is_dir()).collect()
+}
+
+fn has_manifests(lib: &Path) -> bool {
+    fs::read_dir(lib.join("steamapps")).is_ok_and(|rd| rd.flatten().any(|e| e.file_name().to_string_lossy().starts_with("appmanifest_")))
 }
 
 /// Every Steam library folder (from libraryfolders.vdf), the main one first.
@@ -200,10 +261,10 @@ pub fn clean_name(n: &str) -> String {
     n.replace(['\u{2122}', '\u{00AE}', '\u{00A9}'], "").split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Installed games across every library, by name.
-pub fn installed(root: &Path) -> Vec<App> {
+/// Installed games across every library found, by name.
+pub fn installed(d: &Discovery) -> Vec<App> {
     let mut out: Vec<App> = vec![];
-    for lib in libraries(root) {
+    for (lib, _) in &d.libraries {
         let Ok(rd) = fs::read_dir(lib.join("steamapps")) else { continue };
         for e in rd.flatten() {
             let n = e.file_name().to_string_lossy().to_string();
@@ -281,7 +342,8 @@ mod tests {
             .unwrap();
         fs::write(second.join("steamapps/appmanifest_1426210.acf"), "\"AppState\" { \"appid\" \"1426210\" \"name\" \"It Takes Two\" // comment\n }").unwrap();
         assert_eq!(libraries(&root).len(), 2);
-        let apps = installed(&root);
+        let disc = Discovery { roots: vec![root.clone()], libraries: libraries(&root).into_iter().map(|l| (l, "steam")).collect() };
+        let apps = installed(&disc);
         assert_eq!(apps.iter().map(|a| a.name.as_str()).collect::<Vec<_>>(), vec!["It Takes Two", "Portal 2"]);
         fs::create_dir_all(root.join("appcache/librarycache/620")).unwrap();
         fs::write(root.join("appcache/librarycache/620/library_600x900.jpg"), b"x").unwrap();
@@ -289,8 +351,23 @@ mod tests {
         assert!(cached_art(&root, 620, "cover").is_some());
         assert!(cached_art(&root, 1426210, "shot").is_some(), "the old flat layout");
         assert!(cached_art(&root, 999, "cover").is_none());
-        assert!(find_root(&root.to_string_lossy()).is_some());
+        assert!(discover(&root.to_string_lossy()).roots.iter().any(|r| same(r, &root)), "the folder set in Settings is found");
         let _ = fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn a_library_on_another_drive_is_found_by_its_usual_name() {
+        let drive = std::env::temp_dir().join(format!("gn-drive-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&drive);
+        fs::create_dir_all(drive.join("SteamLibrary/steamapps")).unwrap();
+        fs::create_dir_all(drive.join("Games/Steam Library/steamapps")).unwrap();
+        fs::create_dir_all(drive.join("Not Steam/steamapps")).unwrap();
+        let found = libraries_on(&drive);
+        assert_eq!(found.len(), 2, "{found:?}");
+        assert!(!has_manifests(&drive.join("SteamLibrary")), "an empty library holds no games");
+        fs::write(drive.join("SteamLibrary/steamapps/appmanifest_1.acf"), "x").unwrap();
+        assert!(has_manifests(&drive.join("SteamLibrary")));
+        let _ = fs::remove_dir_all(drive);
     }
 
     #[test]

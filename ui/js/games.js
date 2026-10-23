@@ -107,17 +107,29 @@ export function jumpToGame(title) {
   go("shelf", "games");
 }
 
-/** Look a game up online (Steam store first, then SteamGridDB for art when a key is set). Fills in what's missing; never overwrites what you wrote. */
+/** Every lookup source that is set up, in the order they are tried: [{id, label}]. */
+export async function lookupSources() {
+  try { return (await api("/api/providers")).providers.filter(p => !p.unavailable); } catch (e) { return []; }
+}
+
+/** Look one game up with every source that is set up, in order. Each fills only what is still missing, and the first art found stays.
+ *  Returns one line per source ("TheGamesDB: art saved, details filled in"). */
+export async function lookUpAll(title, sources) {
+  const said = [];
+  for (const p of sources) {
+    try {
+      const r = await api("/api/scrape", { title, provider: p.id });
+      said.push(p.label + ": " + (r.art.length ? "art saved" : "no new art") + (r.changed ? ", details filled in" : ""));
+    } catch (e) { said.push(p.label + ": " + e.message); }
+  }
+  return said;
+}
+
+/** Look a game up online with every source that is set up. Fills in what's missing; never overwrites what you wrote. */
 export async function lookUp(g, note) {
   note.textContent = "Looking it up...";
-  const said = [];
-  for (const provider of ["steam", "steamgriddb"]) {
-    try {
-      const r = await api("/api/scrape", { title: g.t, provider });
-      said.push(r.source + ": " + (r.art.length ? "art saved" : "no new art") + (r.changed ? ", details filled in" : ""));
-    } catch (e) { if (provider === "steam" || !/key/.test(e.message)) said.push((provider === "steam" ? "Steam store" : "SteamGridDB") + ": " + e.message); }
-  }
-  note.textContent = said.join(". ") + ".";
+  const sources = await lookupSources();
+  note.textContent = (await lookUpAll(g.t, sources)).join(". ") + ".";
   await reload(); const fresh = gameByTitle(g.t); if (fresh) gameSheet(fresh); render();
 }
 

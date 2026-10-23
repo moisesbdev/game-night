@@ -21,6 +21,10 @@ pub type R = Result<Json, String>;
 /// Starts a game for real; tests swap in one that starts nothing.
 pub type Runner = Box<dyn Fn(&launch::Plan) -> Result<Option<std::process::Child>, String> + Send>;
 type Availability = (Option<Instant>, HashMap<String, launch::Plan>);
+type SteamCache = Option<(Instant, String, crate::steam::Discovery)>;
+
+/// Settings holding secrets: the page only ever sees "set", and sending "set" back keeps the stored value.
+const SECRETS: [&str; 4] = ["steamgriddbKey", "thegamesdbKey", "screenscraperDevPassword", "screenscraperPassword"];
 
 /// Twenty well-known games to try the picker with before bringing in your own (no launch set, no paths).
 pub const SAMPLE: &str = include_str!("../examples/sample-catalog.json");
@@ -36,6 +40,7 @@ pub struct App {
     pub sessions: Arc<SessionLog>,
     pub media: Media,
     avail: Mutex<Availability>,
+    steam: Mutex<SteamCache>,
     /// Overridden by tests so nothing is ever started for real.
     pub runner: Mutex<Option<Runner>>,
     pub rng: Mutex<Option<Box<dyn Rng + Send>>>,
@@ -58,6 +63,7 @@ impl App {
             settings_warning,
             media: Media::default(),
             avail: Mutex::new((None, HashMap::new())),
+            steam: Mutex::new(None),
             runner: Mutex::new(None),
             rng: Mutex::new(None),
             paths,
@@ -88,8 +94,24 @@ impl App {
         if self.settings().is_player(p) { Ok(()) } else { Err(bad("unknown player")) }
     }
 
+    /// Every Steam install and library on this computer (registry, usual places, every drive), looked up at most once a minute.
+    pub fn steam(&self) -> crate::steam::Discovery {
+        let custom = self.settings().steam_dir;
+        let mut c = self.steam.lock().unwrap();
+        if let Some((at, key, d)) = c.as_ref()
+            && at.elapsed() < Duration::from_secs(60)
+            && *key == custom
+        {
+            return d.clone();
+        }
+        let d = crate::steam::discover(&custom);
+        *c = Some((Instant::now(), custom, d.clone()));
+        d
+    }
+
+    /// The main Steam install (for Steam's cached art).
     pub fn steam_root(&self) -> Option<PathBuf> {
-        crate::steam::find_root(&self.settings().steam_dir)
+        self.steam().roots.into_iter().next()
     }
 
     /// {title: plan}, cached for a few seconds.
@@ -209,7 +231,11 @@ impl App {
 
     fn settings_view(&self, st: &Settings) -> Json {
         let mut v = serde_json::to_value(st).unwrap_or(json!({}));
-        v["steamgriddbKey"] = json!(if st.steamgriddb_key.is_empty() { "" } else { "set" }); // never send a secret back to the page
+        for k in SECRETS {
+            if v[k].as_str().is_some_and(|x| !x.is_empty()) {
+                v[k] = json!("set"); // never send a secret back to the page
+            }
+        }
         v["dataDir"] = json!(self.paths.data.to_string_lossy());
         v["steamFound"] = json!(self.steam_root().map(|p| p.to_string_lossy().to_string()));
         v
@@ -484,7 +510,7 @@ impl App {
         let mut cur = serde_json::to_value(self.settings()).unwrap();
         let obj = changes.as_object().ok_or("settings must be an object")?;
         for (k, v) in obj {
-            if k == "steamgriddbKey" && v == "set" {
+            if SECRETS.contains(&k.as_str()) && v == "set" {
                 continue; // the page shows "set" instead of the key; sending it back changes nothing
             }
             if cur.get(k).is_none() {
@@ -521,23 +547,25 @@ impl App {
         let st = self.settings();
         let titles: HashSet<String> = self.catalog.games().iter().map(|g| s(g, "t").to_lowercase()).collect();
         let ids: HashSet<u64> = self.catalog.games().iter().filter_map(launch::steam_id).collect();
-        let root = self.steam_root();
-        let steam: Vec<Json> = root.as_deref().map(crate::steam::installed).unwrap_or_default().into_iter()
+        let disc = self.steam();
+        let root = disc.roots.first().cloned();
+        let steam: Vec<Json> = crate::steam::installed(&disc).into_iter()
             .map(|a| json!({"source": "steam", "key": a.appid.to_string(), "title": a.name, "inCatalog": ids.contains(&a.appid) || titles.contains(&a.name.to_lowercase()), "art": root.as_deref().and_then(|r| crate::steam::cached_art(r, a.appid, "cover")).is_some()}))
             .collect();
         let folders: Vec<Json> = crate::folders::scan(&st.game_dirs).into_iter()
             .map(|f| json!({"source": "folder", "key": f.path.to_string_lossy(), "title": f.title, "inCatalog": titles.contains(&f.title.to_lowercase()), "art": false}))
             .collect();
-        Ok(json!({"steamDir": root.map(|r| r.to_string_lossy().to_string()), "gameDirs": st.game_dirs, "steam": steam, "folders": folders}))
+        let libraries: Vec<Json> = disc.libraries.iter().map(|(p, how)| json!({"path": p.to_string_lossy(), "how": how})).collect();
+        Ok(
+            json!({"steamDir": root.map(|r| r.to_string_lossy().to_string()), "steamLibraries": libraries, "gameDirs": st.game_dirs, "steam": steam, "folders": folders}),
+        )
     }
 
     /// Add picked library games as drafts: enough to be drawn, marked to be checked (and filled in by a lookup if you like).
     pub fn import_library(&self, picks: &Value) -> R {
         let picks = picks.as_array().ok_or("picks must be a list")?;
         let st = self.settings();
-        let root = self.steam_root();
-        let steam: HashMap<String, crate::steam::App> =
-            root.as_deref().map(crate::steam::installed).unwrap_or_default().into_iter().map(|a| (a.appid.to_string(), a)).collect();
+        let steam: HashMap<String, crate::steam::App> = crate::steam::installed(&self.steam()).into_iter().map(|a| (a.appid.to_string(), a)).collect();
         let folders: HashMap<String, crate::folders::FoundGame> =
             crate::folders::scan(&st.game_dirs).into_iter().map(|f| (f.path.to_string_lossy().to_string(), f)).collect();
         let mut drafts = vec![];
@@ -566,6 +594,21 @@ impl App {
         let (n, refused) = self.catalog.add_many(v["games"].as_array().map(Vec::as_slice).unwrap_or(&[]))?;
         self.refresh();
         Ok(json!({"added": n, "refused": refused}))
+    }
+
+    /// Folders on this computer that look like they hold games, for one-tap adding.
+    pub fn folder_suggestions(&self) -> R {
+        let st = self.settings();
+        Ok(
+            json!({"folders": crate::folders::suggest(&st.game_dirs).into_iter().map(|(p, n)| json!({"path": p.to_string_lossy(), "games": n})).collect::<Vec<_>>(),
+                  "steamLibraries": self.steam().libraries.iter().map(|(p, how)| json!({"path": p.to_string_lossy(), "how": how})).collect::<Vec<_>>()}),
+        )
+    }
+
+    /// The system's folder picker, opened on this computer. Returns the chosen folder, or null when cancelled or unavailable.
+    pub fn pick_folder(&self, title: &str, start: &str) -> R {
+        let title: String = if title.trim().is_empty() { "Choose a folder".into() } else { title.chars().take(80).collect() };
+        Ok(json!({"path": crate::folders::pick_folder(&title, Some(start).filter(|x| !x.is_empty()))}))
     }
 
     // ---- scrapers
