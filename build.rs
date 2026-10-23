@@ -36,7 +36,8 @@ fn main() {
         let ico = Path::new(&out_dir).join("gamenight.ico");
         std::fs::write(&ico, icon::ico(&[16, 24, 32, 48, 64, 128, 256])).unwrap();
         let manifest = Path::new(&out_dir).join("gamenight.manifest");
-        std::fs::write(&manifest, MANIFEST).unwrap();
+        let version = format!("{}.0", std::env::var("CARGO_PKG_VERSION").unwrap()); // the manifest wants four parts
+        std::fs::write(&manifest, MANIFEST.replace("1.0.0.0", &version)).unwrap();
         let mut res = winresource::WindowsResource::new();
         res.set_icon(ico.to_str().unwrap())
             .set_manifest_file(manifest.to_str().unwrap())

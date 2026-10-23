@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
+
+Plug and play: Game Night finds your games, wherever they are, and ships as one file.
 
 - **Moved games are found by themselves.** Launchers' records go stale when a drive letter changes or a library moves (GOG still pointing at E: after E: became H:). Play now looks for the same folders on every drive, in your game folders and in the usual game-folder places (Games, GOG Games, Epic Games...), and for the program by name inside a game folder that turns up. Health lists games found in a new place with one button to save it; the GOG detector does the same and leaves out entries that aren't installed anywhere.
 - **Less on screen.** Settings leads with who's playing and game folders; the Steam folder, art folders and lookup keys fold away. One line explains which launchers are found by themselves. The web view's cache lives in the data folder, not beside the program.
