@@ -197,15 +197,15 @@ impl Store {
     }
 
     /// Take back the most recent pick of this game within 12 hours (it never really started), and give the turn back.
-    pub fn undo_confirm(&self, title: &str, mode: &str) -> Result<bool, String> {
+    pub fn undo_confirm(&self, title: &str) -> Result<bool, String> {
         let cutoff = (chrono::Local::now() - chrono::Duration::hours(12)).format("%Y-%m-%dT%H:%M:%S").to_string();
         self.commit(|st| {
             let h = st["history"].as_array_mut().unwrap();
             if let Some(i) = h.iter().rposition(|x| s(x, "title") == title && s(x, "at") >= cutoff.as_str()) {
-                let chose = s(&h[i], "chose").to_string();
+                let (chose, mode) = (s(&h[i], "chose").to_string(), s(&h[i], "mode").to_string());
                 h.remove(i);
                 if !chose.is_empty() {
-                    st[Self::turn_key(mode)] = json!(chose);
+                    st[Self::turn_key(&mode)] = json!(chose); // the turn of the group that made the pick
                 }
                 return Ok(true);
             }
@@ -331,7 +331,7 @@ mod tests {
         assert_eq!(st.turn(&players, "couch"), "p3");
         st.confirm("C", &players, "couch").unwrap();
         assert_eq!(st.turn(&players, "couch"), "p1", "the pick goes round the whole group");
-        assert!(st.undo_confirm("C", "couch").unwrap());
+        assert!(st.undo_confirm("C").unwrap());
         assert_eq!(st.turn(&players, "couch"), "p3");
         st.veto("A").unwrap();
         assert_eq!(st.vetoes(), vec!["A"]);

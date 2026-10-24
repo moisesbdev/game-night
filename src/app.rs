@@ -182,9 +182,14 @@ impl App {
         c.unavailable = self.availability().into_iter().filter(|(t, p)| !p.ok && has_launch.contains(t.as_str())).map(|(t, p)| (t, p.reason)).collect();
         c.meh_soft = st.not_for_us == "rarer";
         if let Some(ids) = self.shared_steam() {
-            c.all_own = Some(
-                self.catalog.games().iter().filter(|g| launch::steam_id(g).is_some_and(|id| ids.contains_key(&id))).map(|g| s(g, "t").to_string()).collect(),
-            );
+            let (all, not_all): (Vec<_>, Vec<_>) = self
+                .catalog
+                .games()
+                .iter()
+                .filter_map(|g| launch::steam_id(g).map(|id| (s(g, "t").to_string(), ids.contains_key(&id))))
+                .partition(|(_, all)| *all);
+            c.all_own = Some(all.into_iter().map(|(t, _)| t).collect());
+            c.someone_lacks = not_all.into_iter().map(|(t, _)| t).collect();
         }
         c
     }
@@ -418,7 +423,7 @@ impl App {
             return Ok(json!({"session": self.sessions.confirm_started(sid)?}));
         }
         let st = self.settings();
-        self.store.undo_confirm(s(&x, "title"), st.active_mode())?;
+        self.store.undo_confirm(s(&x, "title"))?;
         Ok(json!({"session": self.sessions.mark_failed(sid)?, "turn": self.store.turn(&self.players(), st.active_mode())}))
     }
 
@@ -819,7 +824,7 @@ impl App {
                 Err(e) => {
                     report.push(json!({"id": p.id, "name": p.name, "error": e}));
                     // keep what was read last time, so one hiccup doesn't empty a library
-                    let mut old = libs["players"].get(&p.id).cloned().unwrap_or(json!({"games": {}}));
+                    let mut old = libs["players"].get(&p.id).filter(|o| s(o, "profile") == p.steam).cloned().unwrap_or(json!({"games": {}}));
                     old["error"] = json!(e);
                     old["profile"] = json!(p.steam);
                     players.insert(p.id.clone(), old);
@@ -1045,6 +1050,7 @@ mod tests {
         game("Couch, plays online too", "couch", Some(620));
         game("Online, all own", "online", Some(730));
         game("Online, Jo lacks it", "online", Some(570));
+        game("Online, not on Steam", "online", None);
         crate::util::write_json(
             &a.steam_libraries_path(),
             &json!({"players": {
@@ -1069,13 +1075,17 @@ mod tests {
         assert_eq!(a.bootstrap().unwrap()["turn"], "p1", "online keeps its own turn");
         assert_eq!(
             pool(),
-            vec!["Couch, plays online too", "Online, all own"],
-            "online games and Steam-online ones, only what the online group all own, whatever the tile asked"
+            vec!["Couch, plays online too", "Online, all own", "Online, not on Steam"],
+            "online games and Steam-online ones, minus Steam games someone lacks, whatever the tile asked"
         );
         assert!(a.set_turn("p2").is_err(), "Alex isn't in the online group");
         assert!(a.set_mode("sofa").is_err());
+        a.confirm("Online, all own").unwrap();
         a.set_mode("couch").unwrap();
         assert_eq!(a.bootstrap().unwrap()["turn"], "p2", "back on the couch, it's still Alex's pick");
+        assert!(a.store.undo_confirm("Online, all own").unwrap());
+        assert_eq!(a.store.turn(&a.settings().online_group(), "online"), "p1", "undoing an online pick gives the online turn back, not the couch one");
+        assert_eq!(a.bootstrap().unwrap()["turn"], "p2");
     }
 
     #[test]

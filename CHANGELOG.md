@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Online nights no longer leave out games that aren't on Steam: only Steam games someone in the online group doesn't own are left out.
+- Taking back a pick ("it didn't start") gives the turn back to the group that made it, even after switching between couch and online.
+- Changing someone's Steam profile no longer keeps the previous account's games if the new one can't be read.
+- Lookup errors never repeat an API key or password from the request.
+
 ## 1.2.0
 
 Playing together, two ways: on the couch, and online with friends whose Steam libraries Game Night can now see.

@@ -74,6 +74,8 @@ pub struct Context {
     pub mode: String,
     /// Games marked couch that Steam says also play online together.
     pub online_ok: HashSet<String>,
+    /// Steam games someone in the online group doesn't own (left out of an online night).
+    pub someone_lacks: HashSet<String>,
 }
 
 impl Context {
@@ -93,6 +95,7 @@ impl Context {
             all_own: None,
             mode: String::new(),
             online_ok: HashSet::new(),
+            someone_lacks: HashSet::new(),
         }
     }
 
@@ -219,10 +222,13 @@ fn base_ok(g: &Json, f: &Filters, ctx: &Context) -> bool {
         "online" if s(g, "where") != "online" && !ctx.online_ok.contains(t) => return false,
         _ => {}
     }
-    if (f.owned || ctx.mode == "online")
+    if f.owned
         && let Some(all) = &ctx.all_own
         && !all.contains(t)
     {
+        return false;
+    }
+    if ctx.mode == "online" && ctx.someone_lacks.contains(t) {
         return false;
     }
     true

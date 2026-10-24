@@ -207,8 +207,12 @@ pub(crate) mod net {
         if let Some(k) = bearer {
             req = req.header("Authorization", &format!("Bearer {k}"));
         }
-        let mut r = req.call().map_err(|e| e.to_string())?;
-        r.body_mut().with_config().limit(4 << 20).read_json::<Value>().map_err(|e| e.to_string())
+        let hide = |e: String| match url.split_once('?') {
+            Some((_, q)) if !q.is_empty() => e.replace(q, "..."),
+            _ => e,
+        };
+        let mut r = req.call().map_err(|e| hide(e.to_string()))?;
+        r.body_mut().with_config().limit(4 << 20).read_json::<Value>().map_err(|e| hide(e.to_string()))
     }
 
     /// An image from an allowed host: (bytes, extension). Refuses anything that isn't an image or is over 10 MB.
